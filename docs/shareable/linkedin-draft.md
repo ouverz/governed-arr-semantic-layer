@@ -1,4 +1,4 @@
-I built a small ARR Semantic Layer Lab to answer a question I think a lot of RevOps / data teams will face soon:
+I built a small ARR Semantic Layer Lab to answer a question I think a lot of RevOps and data teams will run into soon:
 
 **Can we define one ARR number that Finance trusts, RevOps can explain, and AI can safely reuse?**
 
@@ -19,6 +19,12 @@ A few things I learned:
 - If you do not certify the metric once, every downstream tool will reinvent it.
 - AI is only useful here if it reads certified meaning, not raw ambiguity.
 
-I like this project because it is intentionally narrow but deep: one metric, one contract, one governed path.
+If I were to describe the project in one sentence: it is intentionally narrow, but deep — one metric, one contract, one governed path.
 
-If you want to see the repo or the architecture notes, I’m happy to share.
+I also made a visual case-study page because the architecture tells the story better when you can see the flow:
+- metric contract
+- proof stack
+- month-end ARR trend
+- Snowflake validation path
+
+If you want the repo or the architecture notes, I’m happy to share.

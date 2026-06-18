@@ -76,5 +76,6 @@ make build-prod
 
 ## Shareable Drafts
 
+- [`docs/shareable/portfolio-case-study.html`](docs/shareable/portfolio-case-study.html) for a visual, browser-openable case-study page.
 - [`docs/shareable/blog-draft.md`](docs/shareable/blog-draft.md) for a longer portfolio blog post.
 - [`docs/shareable/linkedin-draft.md`](docs/shareable/linkedin-draft.md) for a short announcement post.
