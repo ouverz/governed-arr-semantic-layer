@@ -1,6 +1,7 @@
 name: Snowflake deployment
 
 on:
+  pull_request:
   workflow_run:
     workflows: [CI]
     types: [completed]
@@ -20,13 +21,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: snowflake-${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event.workflow_run.head_sha }}
+  group: snowflake-${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event_name == 'pull_request' && github.event.pull_request.number || github.event.workflow_run.head_sha }}
   cancel-in-progress: false
 
 jobs:
   deploy-development:
     name: Deploy isolated development
-    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'development' || github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && vars.ENABLE_SNOWFLAKE_CD == 'true'
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' && inputs.environment == 'development' || github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && vars.ENABLE_SNOWFLAKE_CD == 'true'
     runs-on: ubuntu-latest
     environment: development
     env:
@@ -37,12 +38,13 @@ jobs:
       SNOWFLAKE_DATABASE: ${{ vars.SNOWFLAKE_DATABASE }}
       SNOWFLAKE_WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
       SNOWFLAKE_SCHEMA: DBT_GHA_${{ github.run_id }}
+      SNOWFLAKE_CLONE_DATABASE: ARR_LAB_PR_${{ github.run_id }}
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Configure dbt profile
         run: cp profiles.example.yml profiles.yml
@@ -53,10 +55,27 @@ jobs:
       - name: Validate Snowflake connection
         run: docker compose run --rm dbt debug --target snowflake_dev
 
+      - name: Create zero-copy Snowflake clone
+        env:
+          SNOWFLAKE_SOURCE_DATABASE: ${{ vars.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_TARGET_DATABASE: ${{ env.SNOWFLAKE_CLONE_DATABASE }}
+        run: |
+          docker compose run --rm dbt run-operation clone_snowflake_database --target snowflake_dev --args "{\"source_database\": \"${SNOWFLAKE_SOURCE_DATABASE}\", \"target_database\": \"${SNOWFLAKE_TARGET_DATABASE}\"}"
+
       - name: Deploy to isolated Snowflake schemas
+        env:
+          SNOWFLAKE_DATABASE: ${{ env.SNOWFLAKE_CLONE_DATABASE }}
         run: |
           docker compose run --rm dbt seed --full-refresh --target snowflake_dev
           docker compose run --rm dbt build --target snowflake_dev
+
+      - name: Drop zero-copy Snowflake clone
+        if: always()
+        env:
+          SNOWFLAKE_SOURCE_DATABASE: ${{ vars.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_TARGET_DATABASE: ${{ env.SNOWFLAKE_CLONE_DATABASE }}
+        run: |
+          docker compose run --rm dbt run-operation drop_snowflake_database --target snowflake_dev --args "{\"database_name\": \"${SNOWFLAKE_TARGET_DATABASE}\"}"
 
   deploy-production:
     name: Deploy production

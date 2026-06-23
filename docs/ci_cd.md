@@ -63,21 +63,24 @@ deployment succeeds.
 
 ### Development
 
-A manual `development` dispatch builds into an isolated namespace such as:
+A pull request, a manual `development` dispatch, or an approved post-merge
+`main` workflow build can deploy into an isolated Snowflake clone such as:
 
 ```text
-DBT_GHA_123456_RAW
-DBT_GHA_123456_STAGING
-DBT_GHA_123456_INTERMEDIATE
-DBT_GHA_123456_MARTS
+ARR_LAB_PR_123456
 ```
+
+The job first creates a zero-copy clone of the source Snowflake database, then
+runs `dbt seed --full-refresh` and `dbt build` against that clone with an
+isolated schema prefix. The clone is dropped after the validation run.
 
 After `ENABLE_SNOWFLAKE_CD=true`, each successful `CI` workflow on `main`
 starts the same isolated development deployment. The deployment checks out the
 exact commit validated by that CI run.
 
-Protect `main` with the required CI status check. Deployment is downstream of
-CI and is not a substitute for branch protection.
+Protect `main` with the required CI and development-deploy status checks.
+Deployment is downstream of CI and is not a substitute for branch
+protection.
 
 ### Production
 
