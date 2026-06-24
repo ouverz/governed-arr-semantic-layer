@@ -32,6 +32,14 @@ Snowflake deployment path as part of the operating model, not as an afterthought
 - A governed consumption story that distinguishes certified BI and AI reuse from raw-table interpretation.
 - A reproducible local build that reviewers can run with Docker only.
 
+## Selected visuals
+
+These two views show the shape of the system without making the README a wall of text.
+
+![ARR lineage and transformation layers](<images/Screenshot 2026-06-22 at 23.26.22.png>)
+
+![ARR fact and test nodes](<images/Screenshot 2026-06-22 at 23.27.46.png>)
+
 ## Pattern borrowed from mature revenue stacks
 
 The project follows a pattern used by stronger revenue analytics teams: keep raw inputs separate, derive historical truth with effective dates, and expose a clean consumption layer on top. In practice that means the ARR logic is anchored in point-in-time snapshot facts rather than current-state rows, so month-end truth stays stable and explainable. The same separation also makes it easier to publish a certified dataset for BI or semantic consumption without asking downstream users to interpret raw source tables directly.
@@ -90,15 +98,5 @@ make build-prod
 2. [`02_mvp_plan.md`](02_mvp_plan.md) for the scoped first release and implementation timeline.
 3. [`docs/metric_contract_arr.md`](docs/metric_contract_arr.md) for the certified metric contract.
 4. [`docs/singular_business_tests.md`](docs/singular_business_tests.md) for the human-readable test catalog.
-5. [`docs/project_walkthrough.md`](docs/project_walkthrough.md) for the step-by-step implementation story.
-6. [`docs/demo_runbook.md`](docs/demo_runbook.md) for build and demonstration steps.
-7. [`docs/dbt_best_practices_review.md`](docs/dbt_best_practices_review.md) for the architectural critique and open maturity gaps.
-8. [`docs/dbt_remediation_plan.md`](docs/dbt_remediation_plan.md) for the implemented hardening sequence.
-9. [`snowflake_semantic_views/snowflake_revenue_metrics.sql`](snowflake_semantic_views/snowflake_revenue_metrics.sql) for the native Snowflake semantic view.
-10. [`docs/ci_cd.md`](docs/ci_cd.md) for GitHub Actions validation and Snowflake deployment.
-
-## Public Assets
-
-- [`docs/shareable/portfolio-case-study.html`](docs/shareable/portfolio-case-study.html) as the primary visual case-study page.
-- [`docs/shareable/blog-draft.md`](docs/shareable/blog-draft.md) as the long-form publication draft.
-- [`docs/shareable/linkedin-draft.md`](docs/shareable/linkedin-draft.md) as the short announcement draft.
+5. [`snowflake_semantic_views/snowflake_revenue_metrics.sql`](snowflake_semantic_views/snowflake_revenue_metrics.sql) for the native Snowflake semantic view.
+6. [`docs/ci_cd.md`](docs/ci_cd.md) for GitHub Actions validation and Snowflake deployment.

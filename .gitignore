@@ -24,12 +24,7 @@ docs/blog_post.md
 docs/shareable/blog-draft.md
 docs/shareable/
 
-# Scratch screenshots
-images/
-images/last-image.png
-images/Screenshot 2026-06-22 at 12.15.56.png
-images/Screenshot 2026-06-24 at 12.52.20.png
-images/Screenshot 2026-06-24 at 13.11.36.png
-images/Screenshot 2026-06-24 at 13.12.52.png
-images/Screenshot 2026-06-24 at 13.13.08.png
-images/Screenshot 2026-06-24 at 13.13.37.png
+# Screenshot artifacts
+images/*
+!images/Screenshot 2026-06-22 at 23.26.22.png
+!images/Screenshot 2026-06-22 at 23.27.46.png
