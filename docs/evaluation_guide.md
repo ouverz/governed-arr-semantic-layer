@@ -12,8 +12,9 @@ The project demonstrates a governed ARR operating model:
 2. certified Ending ARR is exposed from `fct_arr_snapshot`;
 3. ARR movement analysis is exposed from `fct_arr_movement`;
 4. data-quality monitoring is exposed through the `dq_arr__*` models;
-5. metric governance is checked by `scripts/governance_check.py`; and
-6. Snowflake consumption is represented by the native semantic view
+5. metric governance is checked by `scripts/governance_check.py`;
+6. dbt semantic meaning is represented by `models/semantic/sem_arr.yml`; and
+7. Snowflake consumption is represented by the native semantic view
    `ARR_LAB.SEMANTIC.REVENUE_METRICS`.
 
 The core business scenario is a prospective ARR definition change: paused
@@ -44,6 +45,32 @@ Salesforce-style CSV seeds
 This mirrors a hands-on-lab pattern, but the emphasis is production operating
 discipline: certified definitions, explicit business ownership, validation,
 and deployment checks.
+
+## Two Semantic Layers
+
+The project follows the same complementary semantic-layer pattern used in dbt
+and Snowflake hands-on labs.
+
+The dbt Semantic Layer is defined in `models/semantic/sem_arr.yml`. It describes
+the certified ARR metrics in dbt-native YAML, including semantic models,
+entities, dimensions, measures, and metrics. This is the portable semantic
+contract for MetricFlow-compatible consumers.
+
+The Snowflake native semantic view is defined in
+`models/snowflake_semantic/revenue_metrics.sql`. It is deployed as
+`ARR_LAB.SEMANTIC.REVENUE_METRICS` and exposes Snowflake-native facts,
+dimensions, metrics, synonyms, verified queries, and AI instructions.
+
+The important design choice is that neither layer owns the business logic. Both
+semantic paths sit on top of the same governed marts:
+
+- `fct_arr_snapshot` for certified Ending ARR;
+- `fct_arr_movement` for ARR movement analysis; and
+- `dim_account` for approved account attributes.
+
+This keeps the ARR definition testable in dbt while supporting multiple
+consumption paths: dbt-native consumers, BI tools, Snowflake SQL, and future
+Snowflake Cortex use cases.
 
 ## Local Evaluation
 
@@ -163,6 +190,10 @@ The implementation should create or refresh:
 
 The ARR definition change is visible in mart totals, semantic-view totals, dbt
 test results, docs, and the semantic view metric comments/AI instructions.
+
+The dbt Semantic Layer definition is visible in dbt artifacts and dbt docs. The
+Snowflake semantic view is visible directly in Snowflake metadata through
+`SHOW SEMANTIC VIEWS` and `SHOW SEMANTIC METRICS`.
 
 ## Optional Future Enhancement
 

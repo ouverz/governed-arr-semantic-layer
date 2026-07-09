@@ -49,6 +49,22 @@ production-style operating model: explicit metric ownership, reviewed definition
 changes, repeatable local validation, Snowflake deployment, and post-deploy
 semantic checks.
 
+## Semantic consumption paths
+
+The project includes two complementary semantic layers over the same governed
+marts:
+
+- [`models/semantic/sem_arr.yml`](models/semantic/sem_arr.yml) defines the
+  dbt Semantic Layer surface for MetricFlow-compatible consumers.
+- [`models/snowflake_semantic/revenue_metrics.sql`](models/snowflake_semantic/revenue_metrics.sql)
+  defines the Snowflake native semantic view for Snowflake-native consumption,
+  including future Cortex Analyst or Cortex Agent use cases.
+
+Both paths depend on `fct_arr_snapshot`, `fct_arr_movement`, and `dim_account`.
+That keeps the certified ARR definition in the marts and lets different
+consumption tools reuse the same governed logic instead of redefining ARR
+downstream.
+
 ## Selected visuals
 
 These two views show the shape of the system without making the README a wall of text.
