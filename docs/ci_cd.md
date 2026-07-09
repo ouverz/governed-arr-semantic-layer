@@ -69,12 +69,17 @@ deployment succeeds.
 
 ### Development
 
-A pull request, a manual `development` dispatch, or an approved post-merge
-`main` workflow build can deploy into an isolated Snowflake clone such as:
+A manual `development` dispatch can deploy into an isolated Snowflake clone such
+as:
 
 ```text
 ARR_LAB_PR_123456
 ```
+
+Pull requests and approved post-merge `main` workflow builds use the same
+isolated deployment path only when the repository variable
+`ENABLE_SNOWFLAKE_CD` is set to `true`. This keeps public-repo PR activity from
+incurring Snowflake usage unless deployment has been deliberately enabled.
 
 The job first creates a zero-copy clone of the source Snowflake database, then
 runs `dbt seed --full-refresh` and `dbt build` against that clone with an
@@ -106,6 +111,11 @@ the workflow also executes `scripts/deploy_snowflake_semantic_view.py`. That
 script deploys `snowflake_semantic_views/snowflake_revenue_metrics.sql` and
 runs the semantic view validation queries embedded in that file, so Snowflake
 semantic metadata stays aligned with the certified mart definitions.
+
+The current semantic-view deployment is intentionally a small standalone script.
+The Snowflake Labs `dbt_semantic_view` package is the likely future migration
+path if this repo should manage native Snowflake semantic views as first-class
+dbt models.
 
 ## Important Limitations
 

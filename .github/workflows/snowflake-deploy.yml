@@ -27,7 +27,7 @@ concurrency:
 jobs:
   deploy-development:
     name: Deploy isolated development
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' && inputs.environment == 'development' || github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && vars.ENABLE_SNOWFLAKE_CD == 'true'
+    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'development' || vars.ENABLE_SNOWFLAKE_CD == 'true' && (github.event_name == 'pull_request' || github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     environment: development
     env:

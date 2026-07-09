@@ -1,26 +1,31 @@
-{{ config(enabled=target.type != 'snowflake') }}
+with expected as (
+    select
+        cast(snapshot_date as date) as snapshot_date,
+        cast(expected_ending_arr_before_policy as decimal(18, 2))
+            as expected_ending_arr_before_policy,
+        cast(expected_ending_arr_after_policy as decimal(18, 2))
+            as expected_ending_arr_after_policy,
+        cast(expected_policy_impact_amount as decimal(18, 2))
+            as expected_policy_impact_amount
+    from {{ ref('expected_ending_arr_after_policy_change') }}
+),
 
-with eligible_lines as (
+eligible_lines as (
     select *
     from {{ ref('int_subscription_arr_lines') }}
     where is_arr_eligible
 ),
 
-month_ends as (
-    select snapshot_date
-    from {{ ref('dim_date') }}
-),
-
 before_policy_active_lines as (
     select
-        month_ends.snapshot_date,
+        expected.snapshot_date,
         eligible_lines.line_arr
-    from eligible_lines
-    inner join month_ends
-        on eligible_lines.subscription_start_date <= month_ends.snapshot_date
-        and eligible_lines.subscription_end_date >= month_ends.snapshot_date
-        and eligible_lines.line_start_date <= month_ends.snapshot_date
-        and eligible_lines.line_end_date >= month_ends.snapshot_date
+    from expected
+    inner join eligible_lines
+        on eligible_lines.subscription_start_date <= expected.snapshot_date
+        and eligible_lines.subscription_end_date >= expected.snapshot_date
+        and eligible_lines.line_start_date <= expected.snapshot_date
+        and eligible_lines.line_end_date >= expected.snapshot_date
 ),
 
 before_policy as (
@@ -33,15 +38,18 @@ before_policy as (
 
 after_policy as (
     select
-        snapshot_date,
-        cast(sum(ending_arr) as decimal(18, 2)) as ending_arr_after_policy
-    from {{ ref('fct_arr_snapshot') }}
+        expected.snapshot_date,
+        cast(sum(fct_arr_snapshot.ending_arr) as decimal(18, 2))
+            as ending_arr_after_policy
+    from expected
+    left join {{ ref('fct_arr_snapshot') }} as fct_arr_snapshot
+        on expected.snapshot_date = fct_arr_snapshot.snapshot_date
     group by 1
 ),
 
 actual as (
     select
-        coalesce(before_policy.snapshot_date, after_policy.snapshot_date) as snapshot_date,
+        expected.snapshot_date,
         before_policy.ending_arr_before_policy,
         after_policy.ending_arr_after_policy,
         cast(
@@ -49,21 +57,11 @@ actual as (
             - after_policy.ending_arr_after_policy
             as decimal(18, 2)
         ) as policy_impact_amount
-    from before_policy
-    full outer join after_policy
-        on before_policy.snapshot_date = after_policy.snapshot_date
-),
-
-expected as (
-    select
-        cast(snapshot_date as date) as snapshot_date,
-        cast(expected_ending_arr_before_policy as decimal(18, 2))
-            as expected_ending_arr_before_policy,
-        cast(expected_ending_arr_after_policy as decimal(18, 2))
-            as expected_ending_arr_after_policy,
-        cast(expected_policy_impact_amount as decimal(18, 2))
-            as expected_policy_impact_amount
-    from {{ ref('expected_ending_arr_after_policy_change') }}
+    from expected
+    left join before_policy
+        on expected.snapshot_date = before_policy.snapshot_date
+    left join after_policy
+        on expected.snapshot_date = after_policy.snapshot_date
 )
 
 select
