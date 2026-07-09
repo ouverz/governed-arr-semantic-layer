@@ -56,7 +56,9 @@ The project follows a pattern used by stronger revenue analytics teams: keep raw
 ## What is intentionally deferred
 
 This repo is scoped as a lab rather than a full production platform.
-Deferred items include live Metabase dashboards, live Snowflake semantic execution in this workspace, recognized ARR reconciliation, production orchestration, row-level security, multi-currency, usage-based pricing, and historical type-2 account dimensions.
+Deferred items include live Metabase dashboards, recognized ARR reconciliation,
+production orchestration, row-level security, multi-currency, usage-based
+pricing, and historical type-2 account dimensions.
 
 That boundary is deliberate: it keeps the case study focused on proving one metric deeply instead of spreading effort across too many unfinished surfaces.
 
@@ -100,6 +102,7 @@ Configure `.env` from `.env.example`, then validate and deploy to Snowflake:
 ```bash
 make debug-prod
 make build-prod
+make deploy-snowflake-semantic-view
 ```
 
 ## Documentation

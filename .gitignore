@@ -26,6 +26,10 @@ docs/blog_post.md
 docs/shareable/blog-draft.md
 docs/shareable/
 
+# Local implementation planning notes
+governed-arr-*-plan.md
+snowflake_semantic_views/to-dos.md
+
 # Screenshot artifacts
 images/*
 !images/Screenshot 2026-06-22 at 23.26.22.png
