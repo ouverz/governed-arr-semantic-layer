@@ -1,6 +1,8 @@
 .DS_Store
 .user.yml
 .env
+__pycache__/
+*.py[cod]
 dbt_packages/
 logs/
 target/

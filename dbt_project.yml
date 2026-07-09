@@ -18,6 +18,7 @@ vars:
   arr_fixture_history_start_date: "2025-01-01"
   arr_fixture_reporting_start_date: "2025-01-01"
   arr_fixture_reporting_end_date: "2025-06-30"
+  arr_paused_subscription_exclusion_start_date: "2025-04-01"
   arr_prod_history_start_date: "2020-01-01"
   arr_prod_reporting_start_date: "2021-01-01"
 
@@ -29,6 +30,10 @@ models:
     intermediate:
       +materialized: view
       +schema: intermediate
+    data_quality:
+      +materialized: view
+      +schema: data_quality
+      +tags: ["data_quality"]
     marts:
       +materialized: table
       +schema: marts

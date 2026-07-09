@@ -32,6 +32,9 @@ Ending ARR is the sum of `line_arr` at the certified grain.
 ARR eligibility is owned by the product catalog. Subscription-line effective
 dates determine when a product contributes ARR within its parent subscription.
 
+From `2025-04-01`, paused subscriptions are excluded from certified Ending ARR.
+This policy is controlled by `arr_paused_subscription_exclusion_start_date`.
+
 ## ARR Movements
 
 `fct_arr_movement` compares account-level Ending ARR between consecutive
@@ -76,3 +79,7 @@ recognized revenue, or open pipeline.
 Any definition change requires the current and proposed definition, reason,
 expected business impact, effective date, backfill decision, RevOps approval,
 Data approval, implementation review, and release notes.
+
+## Change Log
+
+- `2025-04-01`: paused subscriptions are excluded from certified Ending ARR prospectively. Prior certified periods are not restated.

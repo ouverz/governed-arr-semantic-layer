@@ -21,8 +21,9 @@ dispatches. It:
 6. builds modified nodes with their dependencies and descendants while
    skipping data tests in the slim step;
 7. runs the complete local DuckDB build and data-test suite;
-8. executes the local semantic contract validator; and
-9. publishes the successful `main` manifest for future state comparison.
+8. executes the local semantic contract validator;
+9. runs the governance quality gate; and
+10. publishes the successful `main` manifest for future state comparison.
 
 The first successful `main` run has no prior manifest, so modified-state
 selection is skipped. The complete build still runs.
@@ -33,6 +34,11 @@ replacement for the complete local build. Prefixing and suffixing
 in the fresh CI database. The slim step skips data tests because partial
 selection can leave some test contexts under-populated; the full `dbt build`
 later in CI still runs the complete test set.
+
+The governance quality gate runs `make governance-check`. It validates that
+required metric-product controls exist, including the metric contract, owners,
+certified grain, semantic model, data-quality summary, expected fixtures,
+critical business tests, and CI validation hooks.
 
 ## GitHub Configuration
 
@@ -95,13 +101,20 @@ Production deployment is manual only:
 The production target writes to stable `RAW`, `STAGING`, `INTERMEDIATE`, and
 `MARTS` schemas. It must never be used for pull-request or development builds.
 
+If the repository variable `ENABLE_SNOWFLAKE_SEMANTIC_VIEW` is set to `true`,
+the workflow also executes `scripts/deploy_snowflake_semantic_view.py`. That
+script deploys `snowflake_semantic_views/snowflake_revenue_metrics.sql` and
+runs the semantic view validation queries embedded in that file, so Snowflake
+semantic metadata stays aligned with the certified mart definitions.
+
 ## Important Limitations
 
 - This lab still deploys seed-based fixture inputs. Replace them with governed
   production `source()` inputs before treating production deployment as a real
   ingestion pattern.
 - The native Snowflake semantic view is a separate SQL deployment and is not
-  created by these workflows.
+  created by dbt itself. It also depends on native Snowflake semantic view
+  syntax being available for the target account and role.
 - Password authentication is supported by the current profile. Prefer
   key-pair or workload-identity authentication before production use.
 - The custom semantic validator proves local contract behavior; it does not

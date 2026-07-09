@@ -62,7 +62,7 @@ seeds:
         data_tests:
           - accepted_values:
               arguments:
-                values: [active, cancelled, expired]
+                values: [active, cancelled, expired, paused]
       - name: currency
         data_tests:
           - accepted_values:
@@ -86,7 +86,7 @@ seeds:
         data_tests:
           - accepted_values:
               arguments:
-                values: [new, expand, contract, renew, reactivate]
+                values: [new, expand, contract, renew, reactivate, pause]
       - name: billing_interval_months
         data_tests:
           - accepted_values:

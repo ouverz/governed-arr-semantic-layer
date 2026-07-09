@@ -29,8 +29,17 @@ Snowflake deployment path as part of the operating model, not as an afterthought
 - One governed metric, Ending ARR, defined end to end.
 - Real ARR edge cases: billing intervals, discounts, exclusions, churn, reactivation, and renewals.
 - A documented metric contract, singular business tests, and model/unit tests that prove the logic.
+- Data-quality observability models around the ARR staging inputs.
+- A governance quality gate that checks required metric-product controls.
+- A documented metric-change example for excluding paused subscriptions prospectively.
 - A governed consumption story that distinguishes certified BI and AI reuse from raw-table interpretation.
 - A reproducible local build that reviewers can run with Docker only.
+
+## Operating-model controls
+
+The project includes a data-quality observability layer for completeness, validity, duplicates, freshness/coverage, and referential integrity across ARR staging inputs. It also includes a governance quality gate that checks required artifacts such as the metric contract, owners, certified grain, semantic model, fixtures, business tests, and CI validation.
+
+See [`docs/data_quality.md`](docs/data_quality.md), [`docs/governance_quality_gate.md`](docs/governance_quality_gate.md), and [`docs/change_examples/exclude_paused_subscriptions.md`](docs/change_examples/exclude_paused_subscriptions.md).
 
 ## Selected visuals
 
@@ -59,6 +68,7 @@ Prerequisite: a running Docker daemon.
 docker compose build
 docker compose run --rm dbt build
 docker compose run --rm --entrypoint python dbt scripts/query_results.py
+make governance-check
 ```
 
 Expected certified Ending ARR:
@@ -96,5 +106,8 @@ make build-prod
 
 1. [`docs/metric_contract_arr.md`](docs/metric_contract_arr.md) for the certified metric contract.
 2. [`docs/singular_business_tests.md`](docs/singular_business_tests.md) for the human-readable test catalog.
-3. [`snowflake_semantic_views/snowflake_revenue_metrics.sql`](snowflake_semantic_views/snowflake_revenue_metrics.sql) for the native Snowflake semantic view.
-4. [`docs/ci_cd.md`](docs/ci_cd.md) for GitHub Actions validation and Snowflake deployment.
+3. [`docs/data_quality.md`](docs/data_quality.md) for the data-quality observability layer.
+4. [`docs/governance_quality_gate.md`](docs/governance_quality_gate.md) for automated governance checks.
+5. [`docs/change_examples/exclude_paused_subscriptions.md`](docs/change_examples/exclude_paused_subscriptions.md) for the metric-change example.
+6. [`snowflake_semantic_views/snowflake_revenue_metrics.sql`](snowflake_semantic_views/snowflake_revenue_metrics.sql) for the native Snowflake semantic view.
+7. [`docs/ci_cd.md`](docs/ci_cd.md) for GitHub Actions validation and Snowflake deployment.

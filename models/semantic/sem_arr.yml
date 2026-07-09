@@ -79,7 +79,8 @@ metrics:
   - name: ending_arr
     description: >
       Annualized recurring revenue active at calendar month-end, excluding
-      one-time fees, services, credits, tax, and inactive subscriptions.
+      one-time fees, services, credits, tax, inactive subscriptions, and paused
+      subscriptions from the certified policy effective date.
     type: simple
     label: Ending ARR
     type_params:

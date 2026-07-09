@@ -11,6 +11,7 @@ with expected as (
     union all select 'L012', cast(600.00 as decimal(18, 2))
     union all select 'L013', cast(2400.00 as decimal(18, 2))
     union all select 'L014', cast(3600.00 as decimal(18, 2))
+    union all select 'L015', cast(1200.00 as decimal(18, 2))
 ),
 
 actual as (

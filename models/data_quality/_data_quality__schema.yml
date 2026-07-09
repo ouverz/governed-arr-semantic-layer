@@ -1,0 +1,118 @@
+version: 2
+
+models:
+  - name: dq_arr__completeness
+    description: Monitors required-field completeness for ARR staging inputs.
+    columns:
+      - name: quality_dimension
+        description: Data-quality dimension represented by the model.
+      - name: source_model
+        description: Staging model being evaluated.
+      - name: total_records
+        description: Number of records evaluated.
+      - name: required_fields_checked
+        description: Number of required fields checked per record.
+      - name: missing_required_values
+        description: Total missing required values across evaluated records.
+      - name: completeness_score
+        description: Percentage of required field values present.
+      - name: quality_status
+        description: pass when no required values are missing; otherwise fail.
+
+  - name: dq_arr__validity
+    description: Monitors logical validity checks for ARR staging inputs.
+    columns:
+      - name: quality_dimension
+        description: Data-quality dimension represented by the model.
+      - name: source_model
+        description: Staging model being evaluated.
+      - name: total_records
+        description: Number of records evaluated.
+      - name: invalid_date_ranges
+        description: Records with an end date before a start date.
+      - name: invalid_billing_intervals
+        description: Subscription lines with non-positive billing intervals.
+      - name: invalid_quantities
+        description: Subscription lines with non-positive quantities.
+      - name: invalid_prices
+        description: Subscription lines with negative price amounts.
+      - name: invalid_discounts
+        description: Subscription lines with discounts outside 0 to 100.
+      - name: invalid_currency_records
+        description: Subscriptions outside the current EUR-only metric scope.
+      - name: invalid_status_records
+        description: Subscriptions with statuses outside the accepted lifecycle values.
+      - name: validity_score
+        description: Percentage of validity checks passing.
+      - name: quality_status
+        description: pass when no invalid values are detected; otherwise fail.
+
+  - name: dq_arr__duplicates
+    description: Monitors duplicate identifier risk across ARR source entities.
+    columns:
+      - name: quality_dimension
+        description: Data-quality dimension represented by the model.
+      - name: entity_name
+        description: Business entity being evaluated.
+      - name: total_records
+        description: Number of records evaluated.
+      - name: unique_ids
+        description: Number of distinct primary identifiers found.
+      - name: duplicate_records
+        description: Difference between total records and unique identifiers.
+      - name: uniqueness_pct
+        description: Percentage of records represented by unique identifiers.
+      - name: quality_status
+        description: pass when no duplicate identifiers are detected; otherwise fail.
+
+  - name: dq_arr__freshness
+    description: Reports fixture business-date coverage for the seed-based ARR lab.
+    columns:
+      - name: quality_dimension
+        description: Data-quality dimension represented by the model.
+      - name: dataset
+        description: Dataset or coverage area being evaluated.
+      - name: earliest_business_date
+        description: Earliest business effective date in the ARR fixture inputs.
+      - name: latest_business_date
+        description: Latest business effective date in the ARR fixture inputs.
+      - name: latest_snapshot_date
+        description: Latest modeled ARR snapshot date available.
+      - name: coverage_status
+        description: pass when the fixture covers the expected reporting window.
+      - name: notes
+        description: Context explaining that this is seed coverage, not ingestion freshness.
+
+  - name: dq_arr__referential_integrity
+    description: Monitors orphan records across the ARR staging input graph.
+    columns:
+      - name: quality_dimension
+        description: Data-quality dimension represented by the model.
+      - name: relationship_name
+        description: Named child-to-parent relationship being evaluated.
+      - name: child_model
+        description: Child staging model in the relationship.
+      - name: parent_model
+        description: Parent staging model in the relationship.
+      - name: orphan_records
+        description: Child records without a matching parent record.
+      - name: integrity_status
+        description: pass when no orphan records are detected; otherwise fail.
+
+  - name: dq_arr__summary
+    description: Dashboard-style rollup of the ARR data-quality observability layer.
+    columns:
+      - name: quality_area
+        description: Data-quality area summarized.
+      - name: total_checks
+        description: Number of component checks summarized.
+      - name: passing_checks
+        description: Component checks with pass status.
+      - name: warning_checks
+        description: Component checks with warning status.
+      - name: failing_checks
+        description: Component checks with fail status.
+      - name: quality_score
+        description: Percentage of component checks passing.
+      - name: quality_status
+        description: pass, warn, or fail status for the quality area.

@@ -22,6 +22,11 @@ active_lines as (
         and eligible_lines.subscription_end_date >= month_ends.snapshot_date
         and eligible_lines.line_start_date <= month_ends.snapshot_date
         and eligible_lines.line_end_date >= month_ends.snapshot_date
+        and (
+            eligible_lines.subscription_status <> 'paused'
+            or month_ends.snapshot_date
+                < cast('{{ var("arr_paused_subscription_exclusion_start_date") }}' as date)
+        )
 )
 
 select

@@ -69,6 +69,13 @@ jobs:
           docker compose run --rm dbt seed --full-refresh --target snowflake_dev
           docker compose run --rm dbt build --target snowflake_dev
 
+      - name: Deploy Snowflake semantic view
+        if: vars.ENABLE_SNOWFLAKE_SEMANTIC_VIEW == 'true'
+        env:
+          SNOWFLAKE_DATABASE: ${{ env.SNOWFLAKE_CLONE_DATABASE }}
+        run: |
+          docker compose run --rm --entrypoint python dbt scripts/deploy_snowflake_semantic_view.py
+
       - name: Drop zero-copy Snowflake clone
         if: always()
         env:
@@ -108,3 +115,8 @@ jobs:
         run: |
           docker compose run --rm dbt seed --full-refresh --target prod
           docker compose run --rm dbt build --target prod
+
+      - name: Deploy Snowflake semantic view
+        if: vars.ENABLE_SNOWFLAKE_SEMANTIC_VIEW == 'true'
+        run: |
+          docker compose run --rm --entrypoint python dbt scripts/deploy_snowflake_semantic_view.py

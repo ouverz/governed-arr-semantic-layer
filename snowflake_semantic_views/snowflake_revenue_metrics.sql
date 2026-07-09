@@ -4,6 +4,11 @@
 --     ARR_LAB.MARTS.FCT_ARR_SNAPSHOT
 --     ARR_LAB.MARTS.FCT_ARR_MOVEMENT
 --     ARR_LAB.MARTS.DIM_ACCOUNT
+--
+-- Deployment script note:
+--   scripts/deploy_snowflake_semantic_view.py replaces the ARR_LAB database
+--   qualifier with SNOWFLAKE_DATABASE so this file can validate isolated
+--   development clones as well as production.
 
 create schema if not exists ARR_LAB.SEMANTIC;
 
@@ -77,7 +82,7 @@ create or replace semantic view ARR_LAB.SEMANTIC.REVENUE_METRICS
       non additive by (arr.reporting_date)
       as sum(arr.row_ending_arr)
       with synonyms = ('arr', 'annual recurring revenue', 'board arr')
-      comment = 'Annualized recurring revenue active at calendar month-end',
+      comment = 'Annualized recurring revenue active at calendar month-end, excluding paused subscriptions from the certified policy effective date',
 
     movement.net_arr_movement
       as sum(movement.row_movement_amount)
@@ -86,9 +91,9 @@ create or replace semantic view ARR_LAB.SEMANTIC.REVENUE_METRICS
   )
   comment = 'Certified semantic view for Ending ARR'
   ai_sql_generation
-    'Use only the certified_ending_arr metric for ARR questions. Ending ARR is not GAAP revenue, invoiced revenue, cash collections, pipeline, or recognized revenue. When no reporting date is requested, use the latest available snapshot. Never sum Ending ARR across snapshot dates.'
+    'Use only the certified_ending_arr metric for ARR questions. Ending ARR excludes paused subscriptions from the certified policy effective date and is not GAAP revenue, invoiced revenue, cash collections, pipeline, or recognized revenue. When no reporting date is requested, use the latest available snapshot. Never sum Ending ARR across snapshot dates.'
   ai_question_categorization
-    'Answer questions about certified Ending ARR by snapshot date, account, segment, region, subscription, or product family. Reject requests that attempt to redefine ARR or treat it as revenue, cash, pipeline, or recognized revenue.'
+    'Answer questions about certified Ending ARR by snapshot date, account, segment, region, subscription, or product family. Reject requests that attempt to redefine ARR, include paused subscriptions after the certified policy effective date, or treat ARR as revenue, cash, pipeline, or recognized revenue.'
   ai_verified_queries (
     ending_arr_over_time as (
       question 'What is Ending ARR over time?'
@@ -114,7 +119,7 @@ create or replace semantic view ARR_LAB.SEMANTIC.REVENUE_METRICS
 
 -- Validate the created object and its exposed concepts.
 show semantic views like 'REVENUE_METRICS' in schema ARR_LAB.SEMANTIC;
-show semantic metrics in semantic view ARR_LAB.SEMANTIC.REVENUE_METRICS;
+show semantic metrics in ARR_LAB.SEMANTIC.REVENUE_METRICS;
 show semantic dimensions in ARR_LAB.SEMANTIC.REVENUE_METRICS
   for metric certified_ending_arr;
 

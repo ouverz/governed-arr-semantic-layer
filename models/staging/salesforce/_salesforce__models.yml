@@ -41,7 +41,7 @@ models:
         data_tests:
           - accepted_values:
               arguments:
-                values: [active, cancelled, expired]
+                values: [active, cancelled, expired, paused]
       - name: start_date
         data_tests: [not_null]
       - name: end_date
