@@ -37,6 +37,9 @@ models:
     marts:
       +materialized: table
       +schema: marts
+    snowflake_semantic:
+      +schema: semantic
+      +tags: ["snowflake_semantic"]
 
 seeds:
   arr_semantic_layer_lab:

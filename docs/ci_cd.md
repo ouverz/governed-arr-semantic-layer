@@ -13,17 +13,18 @@ rules can differ.
 dispatches. It:
 
 1. creates the ignored runtime `profiles.yml` from `profiles.example.yml`;
-2. parses the DuckDB, isolated Snowflake development, and production targets;
-3. loads the fixture seeds and creates empty model relations so unit tests can
+2. installs dbt packages;
+3. parses the DuckDB, isolated Snowflake development, and production targets;
+4. loads the fixture seeds and creates empty model relations so unit tests can
    infer input schemas on a fresh runner;
-4. runs the focused dbt unit tests;
-5. downloads the latest successful `main` manifest, when one exists;
-6. builds modified nodes with their dependencies and descendants while
+5. runs the focused dbt unit tests;
+6. downloads the latest successful `main` manifest, when one exists;
+7. builds modified nodes with their dependencies and descendants while
    skipping data tests in the slim step;
-7. runs the complete local DuckDB build and data-test suite;
-8. executes the local semantic contract validator;
-9. runs the governance quality gate; and
-10. publishes the successful `main` manifest for future state comparison.
+8. runs the complete local DuckDB build and data-test suite;
+9. executes the local semantic contract validator;
+10. runs the governance quality gate; and
+11. publishes the successful `main` manifest for future state comparison.
 
 The first successful `main` run has no prior manifest, so modified-state
 selection is skipped. The complete build still runs.
@@ -107,23 +108,20 @@ The production target writes to stable `RAW`, `STAGING`, `INTERMEDIATE`, and
 `MARTS` schemas. It must never be used for pull-request or development builds.
 
 If the repository variable `ENABLE_SNOWFLAKE_SEMANTIC_VIEW` is set to `true`,
-the workflow also executes `scripts/deploy_snowflake_semantic_view.py`. That
-script deploys `snowflake_semantic_views/snowflake_revenue_metrics.sql` and
-runs the semantic view validation queries embedded in that file, so Snowflake
-semantic metadata stays aligned with the certified mart definitions.
-
-The current semantic-view deployment is intentionally a small standalone script.
-The Snowflake Labs `dbt_semantic_view` package is the likely future migration
-path if this repo should manage native Snowflake semantic views as first-class
-dbt models.
+the workflow also runs the dbt-managed native Snowflake semantic view model at
+`models/snowflake_semantic/revenue_metrics.sql`. The model uses the Snowflake
+Labs `dbt_semantic_view` package so the semantic view is deployed through dbt
+rather than through a separate hand-written DDL runner. After deployment,
+`scripts/deploy_snowflake_semantic_view.py` validates that the semantic object
+exists, exposes the certified ARR metric, and returns ARR totals that match the
+expected fixtures.
 
 ## Important Limitations
 
 - This lab still deploys seed-based fixture inputs. Replace them with governed
   production `source()` inputs before treating production deployment as a real
   ingestion pattern.
-- The native Snowflake semantic view is a separate SQL deployment and is not
-  created by dbt itself. It also depends on native Snowflake semantic view
+- The native Snowflake semantic view depends on native Snowflake semantic view
   syntax being available for the target account and role.
 - Password authentication is supported by the current profile. Prefer
   key-pair or workload-identity authentication before production use.

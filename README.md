@@ -68,6 +68,7 @@ Prerequisite: a running Docker daemon.
 
 ```bash
 docker compose build
+make deps
 docker compose run --rm dbt build
 docker compose run --rm --entrypoint python dbt scripts/query_results.py
 make governance-check
@@ -112,5 +113,5 @@ make deploy-snowflake-semantic-view
 3. [`docs/data_quality.md`](docs/data_quality.md) for the data-quality observability layer.
 4. [`docs/governance_quality_gate.md`](docs/governance_quality_gate.md) for automated governance checks.
 5. [`docs/change_examples/exclude_paused_subscriptions.md`](docs/change_examples/exclude_paused_subscriptions.md) for the metric-change example.
-6. [`snowflake_semantic_views/snowflake_revenue_metrics.sql`](snowflake_semantic_views/snowflake_revenue_metrics.sql) for the native Snowflake semantic view.
+6. [`models/snowflake_semantic/revenue_metrics.sql`](models/snowflake_semantic/revenue_metrics.sql) for the native Snowflake semantic view.
 7. [`docs/ci_cd.md`](docs/ci_cd.md) for GitHub Actions validation and Snowflake deployment.

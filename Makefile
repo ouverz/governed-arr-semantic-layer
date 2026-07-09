@@ -1,4 +1,7 @@
-.PHONY: build build-prod build-snowflake-dev clean debug debug-prod debug-snowflake-dev deploy-snowflake-semantic-view docs docs-serve governance-check inspect query refresh refresh-prod semantic-validate unit-test
+.PHONY: build build-prod build-snowflake-dev clean debug debug-prod debug-snowflake-dev deploy-snowflake-semantic-view deps docs docs-serve governance-check inspect query refresh refresh-prod semantic-validate unit-test
+
+deps:
+	docker compose run --rm dbt deps
 
 build:
 	docker compose run --rm dbt build
@@ -30,6 +33,8 @@ debug-snowflake-dev:
 	docker compose run --rm dbt debug --target snowflake_dev
 
 deploy-snowflake-semantic-view:
+	docker compose run --rm dbt deps
+	docker compose run --rm dbt run --target prod --select revenue_metrics
 	docker compose run --rm --entrypoint python dbt scripts/deploy_snowflake_semantic_view.py
 
 docs:
