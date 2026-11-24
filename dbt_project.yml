@@ -64,3 +64,5 @@ data_tests:
 seeds:
   arr_semantic_layer_lab:
     +schema: raw
+    lending:
+      +group: lending

@@ -1,0 +1,140 @@
+version: 2
+
+seeds:
+  - name: raw_lending__applications
+    description: >
+      Synthetic credit application events. Generated from scripts/lending_scenarios.py.
+      The producer contract is contracts/sources/loan_events.yml.
+    config:
+      column_types:
+        requested_amount_minor: bigint
+        approved_amount_minor: bigint
+        term_months: bigint
+        effective_at: timestamp
+        recorded_at: timestamp
+        _loaded_at: timestamp
+    columns:
+      - name: event_id
+        data_tests: [not_null, unique]
+      - name: event_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [submitted, approved, declined, withdrawn]
+      - name: account_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('raw_salesforce_accounts'), field: account_id}
+      - name: product_id
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [TERM_SME, RCF_SME]
+      - name: currency_code
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [EUR]
+
+  - name: raw_lending__loans
+    description: Synthetic loan lifecycle events. Not a current-state loan table.
+    config:
+      column_types:
+        principal_minor: bigint
+        credit_limit_minor: bigint
+        term_months: bigint
+        monthly_rate_bps: bigint
+        schedule_version: bigint
+        effective_at: timestamp
+        recorded_at: timestamp
+        _loaded_at: timestamp
+    columns:
+      - name: event_id
+        data_tests: [not_null, unique]
+      - name: event_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [originated, restructured, defaulted, written_off, closed]
+      - name: account_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('raw_salesforce_accounts'), field: account_id}
+      - name: product_id
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [TERM_SME, RCF_SME]
+      - name: currency_code
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [EUR]
+
+  - name: raw_lending__repayment_schedule
+    description: Synthetic instalment schedule events, including superseded rows.
+    config:
+      column_types:
+        schedule_version: bigint
+        instalment_number: bigint
+        due_date: date
+        principal_due_minor: bigint
+        interest_due_minor: bigint
+        effective_at: timestamp
+        recorded_at: timestamp
+        _loaded_at: timestamp
+    columns:
+      - name: event_id
+        data_tests: [not_null, unique]
+      - name: event_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [instalment_scheduled, instalment_superseded]
+      - name: account_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('raw_salesforce_accounts'), field: account_id}
+      - name: currency_code
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [EUR]
+
+  - name: raw_lending__repayments
+    description: >
+      Synthetic loan cash postings. draw_posted is a revolving draw.
+      LN_LATE_POSTED records a March value date in April.
+    config:
+      column_types:
+        amount_minor: bigint
+        principal_minor: bigint
+        interest_minor: bigint
+        effective_at: timestamp
+        recorded_at: timestamp
+        _loaded_at: timestamp
+    columns:
+      - name: event_id
+        data_tests: [not_null, unique]
+      - name: event_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [repayment_posted, draw_posted]
+      - name: account_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('raw_salesforce_accounts'), field: account_id}
+      - name: currency_code
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [EUR]

@@ -1,0 +1,225 @@
+version: 2
+
+sources:
+  - name: lending
+    description: >
+      Synthetic SME lending batch from the fictional Lending backend.
+      Same Salesforce accounts as the ARR seeds. Payload contract,
+      including the additive-versus-breaking table, is
+      contracts/sources/loan_events.yml. Daily batch, idempotency key
+      event_id, bitemporal effective_at / recorded_at plus _loaded_at.
+      Lab fixtures are a closed 2025 book, so dbt source freshness is
+      declared and not run in CI: against today's clock every row would
+      be stale for the wrong reason.
+    # Sources do not use macros/generate_schema_name.sql, so this repeats that rule.
+    schema: "{{ 'raw' if target.type == 'snowflake' and target.name == 'prod' else target.schema ~ '_raw' }}"
+    loader: daily_batch
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: {count: 24, period: hour}
+        error_after: {count: 36, period: hour}
+      meta:
+        owner: Lending backend
+        business_owner: Credit
+        contract: contracts/sources/loan_events.yml
+        delivery: daily_batch
+        freshness_sla: "lab: 24h warn / 36h error; historical fixtures, freshness not gated"
+    tables:
+      - name: raw_lending__applications
+        description: Credit application events. A declined or withdrawn application has no loan.
+        config:
+          meta:
+            owner: Lending backend
+        columns:
+          - name: event_id
+            description: Idempotency key.
+            data_type: varchar
+          - name: event_type
+            description: submitted, approved, declined, or withdrawn.
+            data_type: varchar
+          - name: application_id
+            description: Stable application identifier.
+            data_type: varchar
+          - name: account_id
+            description: Salesforce account. Not a conformed customer id.
+            data_type: varchar
+            config:
+              meta:
+                key_role: salesforce_account
+          - name: product_id
+            description: TERM_SME instalment loan or RCF_SME revolving line.
+            data_type: varchar
+          - name: requested_amount_minor
+            description: Amount asked for, integer minor units.
+            data_type: bigint
+          - name: approved_amount_minor
+            description: Set only on approved. Null otherwise. Integer minor units.
+            data_type: bigint
+          - name: currency_code
+            description: ISO 4217 currency of the amounts.
+            data_type: varchar
+          - name: term_months
+            description: Original term for TERM_SME. Null for a revolving line.
+            data_type: bigint
+          - name: effective_at
+            description: When this application event took effect. UTC.
+            data_type: timestamp
+          - name: recorded_at
+            description: When the lending system committed it. UTC.
+            data_type: timestamp
+          - name: _loaded_at
+            description: When the warehouse batch landed the row. UTC.
+            data_type: timestamp
+
+      - name: raw_lending__loans
+        description: Loan lifecycle events. Not a current-state loan table.
+        config:
+          meta:
+            owner: Lending backend
+        columns:
+          - name: event_id
+            description: Idempotency key.
+            data_type: varchar
+          - name: event_type
+            description: originated, restructured, defaulted, written_off, or closed.
+            data_type: varchar
+          - name: loan_id
+            description: Stable loan identifier. Golden values are the scenario names.
+            data_type: varchar
+          - name: application_id
+            description: Application this loan came from.
+            data_type: varchar
+          - name: account_id
+            description: Salesforce account. Same value on every event for the loan.
+            data_type: varchar
+            config:
+              meta:
+                key_role: salesforce_account
+          - name: product_id
+            description: TERM_SME or RCF_SME.
+            data_type: varchar
+          - name: currency_code
+            description: ISO 4217 currency of the amounts.
+            data_type: varchar
+          - name: principal_minor
+            description: Principal amount on this lifecycle event. Integer minor units. 0 on closed and on an undrawn line.
+            data_type: bigint
+          - name: credit_limit_minor
+            description: Revolving limit. Set only on originated RCF_SME.
+            data_type: bigint
+          - name: term_months
+            description: Term on originated or restructured TERM_SME. Null otherwise.
+            data_type: bigint
+          - name: monthly_rate_bps
+            description: Illustrative simple monthly rate in basis points. Not an APR.
+            data_type: bigint
+          - name: schedule_version
+            description: 1 on originated, 2 on restructured, null otherwise.
+            data_type: bigint
+          - name: effective_at
+            description: When this lifecycle event took effect. UTC.
+            data_type: timestamp
+          - name: recorded_at
+            description: When the lending system committed it. UTC.
+            data_type: timestamp
+          - name: _loaded_at
+            description: When the warehouse batch landed the row. UTC.
+            data_type: timestamp
+
+      - name: raw_lending__repayment_schedule
+        description: Instalments becoming due, and instalments cancelled by prepayment or restructure.
+        config:
+          meta:
+            owner: Lending backend
+        columns:
+          - name: event_id
+            description: Idempotency key.
+            data_type: varchar
+          - name: event_type
+            description: instalment_scheduled or instalment_superseded.
+            data_type: varchar
+          - name: loan_id
+            description: Loan the instalment belongs to.
+            data_type: varchar
+          - name: account_id
+            description: Salesforce account on the loan.
+            data_type: varchar
+            config:
+              meta:
+                key_role: salesforce_account
+          - name: schedule_version
+            description: 1 is the original schedule. 2 is the schedule after a restructure.
+            data_type: bigint
+          - name: instalment_id
+            description: Stable id of the instalment across scheduled and superseded.
+            data_type: varchar
+          - name: instalment_number
+            description: 1-based position within the schedule version.
+            data_type: bigint
+          - name: due_date
+            description: Business date the instalment is due.
+            data_type: date
+          - name: principal_due_minor
+            description: Principal due. 0 on a revolving interest-only bill. Integer minor units.
+            data_type: bigint
+          - name: interest_due_minor
+            description: Interest due for this instalment. Integer minor units.
+            data_type: bigint
+          - name: currency_code
+            description: ISO 4217 currency of the amounts.
+            data_type: varchar
+          - name: effective_at
+            description: When this schedule row took effect. UTC. Not the due date, except when a revolving bill is issued on the due date.
+            data_type: timestamp
+          - name: recorded_at
+            description: When the lending system committed it. UTC.
+            data_type: timestamp
+          - name: _loaded_at
+            description: When the warehouse batch landed the row. UTC.
+            data_type: timestamp
+
+      - name: raw_lending__repayments
+        description: >
+          Cash posted to the loan. Draws are draw_posted in this feed so a
+          revolving line's cash in and cash out stay one batch file.
+        config:
+          meta:
+            owner: Lending backend
+        columns:
+          - name: event_id
+            description: Idempotency key.
+            data_type: varchar
+          - name: event_type
+            description: repayment_posted or draw_posted.
+            data_type: varchar
+          - name: loan_id
+            description: Loan the cash posted to.
+            data_type: varchar
+          - name: account_id
+            description: Salesforce account on the loan.
+            data_type: varchar
+            config:
+              meta:
+                key_role: salesforce_account
+          - name: amount_minor
+            description: Cash amount, always positive. Direction is event_type. Integer minor units.
+            data_type: bigint
+          - name: principal_minor
+            description: Portion that changes principal. Integer minor units.
+            data_type: bigint
+          - name: interest_minor
+            description: Portion that pays interest. 0 on a draw. Integer minor units.
+            data_type: bigint
+          - name: currency_code
+            description: ISO 4217 currency of the amounts.
+            data_type: varchar
+          - name: effective_at
+            description: Value date. When the cash took effect. UTC.
+            data_type: timestamp
+          - name: recorded_at
+            description: When the lending system committed the posting. May be after effective_at. UTC.
+            data_type: timestamp
+          - name: _loaded_at
+            description: When the warehouse batch landed the row. UTC.
+            data_type: timestamp
