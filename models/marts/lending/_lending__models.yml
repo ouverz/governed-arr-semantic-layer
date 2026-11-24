@@ -96,13 +96,13 @@ models:
       - name: loan_status
         description: current, delinquent, closed, or written_off. Derived from the ledger, not stored on the source.
         data_type: varchar
-      - name: servicer_reference
-        description: >
-          Additive nullable column. The batch does not send a servicer id,
-          so every row is null. No version bump.
-        data_type: varchar
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [current, delinquent, closed, written_off]
+      - name: servicer_reference
+        description: >
+          Additive nullable column. The batch does not send a servicer id,
+          so every row is null. No version bump.
+        data_type: varchar
