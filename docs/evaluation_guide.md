@@ -100,7 +100,9 @@ the field. `dbt build` also builds `fct_loan_month_end`. The hand-calculated
 rows are in `seeds/expected_loan_month_end.csv`. A posting recorded on 4 April
 with a value date of 20 March is current at 31 March under the default 5-day
 cutoff, and 11 days past due when the same query is compiled with a 3-day cutoff
-(`tests/assert_loan_late_posting_dpd_11.sql`).
+(`tests/assert_loan_late_posting_dpd_11.sql`). `make semantic-validate` also
+checks `par30_ratio`: at 31 March 2025 the fixture is 500000 of 2150000
+outstanding principal.
 
 Expected `make query` output:
 
