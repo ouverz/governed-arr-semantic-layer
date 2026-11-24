@@ -172,13 +172,6 @@ select
     currency_code,
     cast(outstanding_principal_minor as bigint) as outstanding_principal_minor,
     cast(days_past_due as integer) as days_past_due,
-    case
-        when days_past_due = 0 then 'current'
-        when days_past_due <= 29 then '1_29'
-        when days_past_due <= 59 then '30_59'
-        when days_past_due <= 89 then '60_89'
-        else '90_plus'
-    end as dpd_bucket,
     loan_status
 from measured
 {% endmacro %}

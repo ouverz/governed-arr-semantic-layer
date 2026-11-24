@@ -85,14 +85,6 @@ models:
           and zero after closure or write-off.
         data_type: integer
         data_tests: [not_null]
-      - name: dpd_bucket
-        description: current, 1_29, 30_59, 60_89, or 90_plus.
-        data_type: varchar
-        data_tests:
-          - not_null
-          - accepted_values:
-              arguments:
-                values: ["current", "1_29", "30_59", "60_89", "90_plus"]
       - name: loan_status
         description: current, delinquent, closed, or written_off. Derived from the ledger, not stored on the source.
         data_type: varchar
