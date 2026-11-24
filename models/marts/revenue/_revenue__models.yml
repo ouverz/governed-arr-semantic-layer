@@ -46,6 +46,10 @@ models:
               arguments:
                 to: ref('dim_account')
                 field: account_id
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: account_id
       - name: subscription_id
         description: Active subscription contributing Ending ARR.
         data_type: varchar
@@ -106,6 +110,8 @@ models:
           - not_null
           - relationships:
               arguments: {to: ref('dim_account'), field: account_id}
+          - relationships:
+              arguments: {to: ref('dim_customer'), field: account_id}
       - name: currency_code
         description: ISO 4217 currency of the movement amounts. Constant EUR in this lab.
         data_type: varchar
