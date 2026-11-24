@@ -92,3 +92,94 @@ models:
         description: Calendar month-end date.
         data_type: date
         data_tests: [not_null, unique]
+
+  - name: dim_customer
+    description: >
+      Conformed customer for the ARR and lending products. customer_id is
+      one-to-one with the Salesforce account_id in this lab. The map is
+      C plus the numeric part of the account id. Attributes are current-state
+      and are not a point-in-time history.
+    config:
+      access: public
+      group: platform
+      contract:
+        enforced: true
+      meta:
+        owner: Data
+        business_owner: Data
+        tier: supporting
+        grain: customer_id
+        freshness_sla: "lab: current-state fixture, rebuilt on demand"
+        primary_key:
+          - customer_id
+    columns:
+      - name: customer_id
+        description: Conformed customer key. One Salesforce account maps to one customer in this lab.
+        data_type: varchar
+        config:
+          meta:
+            key_role: conformed_customer
+        data_tests: [not_null, unique]
+      - name: account_id
+        description: Salesforce account this customer is mapped from.
+        data_type: varchar
+        config:
+          meta:
+            key_role: salesforce_account
+        data_tests: [not_null, unique]
+      - name: account_name
+        description: Current account name. Not a historical attribute.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: segment
+        description: Current commercial segment. Not a historical attribute.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: region
+        description: Current commercial region. Not a historical attribute.
+        data_type: varchar
+        data_tests: [not_null]
+
+  - name: dim_product
+    description: >
+      Product catalog for subscription products and SME credit products.
+      product_line separates the two. Credit product ids are the lending
+      product_id values. Subscription product ids are the Salesforce product ids.
+    config:
+      access: public
+      group: platform
+      contract:
+        enforced: true
+      meta:
+        owner: Data
+        business_owner: Data
+        tier: supporting
+        grain: product_id
+        freshness_sla: "lab: current catalog, rebuilt on demand"
+        primary_key:
+          - product_id
+    columns:
+      - name: product_id
+        description: Product identifier. Salesforce product id or a lending product id.
+        data_type: varchar
+        data_tests: [not_null, unique]
+      - name: product_name
+        description: Display name.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: product_family
+        description: Family used by ARR for subscription products. Credit products use Credit.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: product_line
+        description: subscription or credit.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [subscription, credit]
+      - name: charge_type
+        description: How the product bills. Credit uses instalment or revolving.
+        data_type: varchar
+        data_tests: [not_null]
