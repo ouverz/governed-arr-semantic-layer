@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: read
+  actions: write
   contents: read
 
 concurrency:
@@ -67,25 +67,41 @@ jobs:
       - name: Run focused unit tests
         run: docker compose run --rm dbt test --select resource_type:unit_test
 
-      - name: Download latest main manifest
+      - name: Download state manifest
         id: state
         shell: bash
         run: |
           mkdir -p ci-state
-          run_id="$(gh run list \
-            --workflow ci.yml \
-            --branch main \
-            --status success \
-            --limit 1 \
-            --json databaseId \
-            --jq '.[0].databaseId // empty')"
+          download_manifest() {
+            local branch="$1"
+            local artifact="$2"
+            local run_id
+            run_id="$(gh run list \
+              --workflow ci.yml \
+              --branch "$branch" \
+              --status success \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId // empty')"
+            if [[ -n "$run_id" ]] && gh run download "$run_id" \
+              --name "$artifact" \
+              --dir ci-state; then
+              return 0
+            fi
+            return 1
+          }
 
-          if [[ -n "$run_id" ]] && gh run download "$run_id" \
-            --name dbt-main-manifest \
-            --dir ci-state; then
+          # A pull request compares with its base branch when that branch has
+          # published a manifest. That is what makes a versioned contract break
+          # fail here. main remains the fallback, including its older artifact name.
+          if [[ "${{ github.event_name }}" == "pull_request" ]] \
+            && download_manifest "${{ github.base_ref }}" dbt-manifest; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          elif download_manifest main dbt-manifest \
+            || download_manifest main dbt-main-manifest; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
-            echo "No successful main manifest is available; skipping state selection."
+            echo "No successful state manifest is available; skipping state selection."
             echo "available=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -107,6 +123,15 @@ jobs:
 
       - name: Evidence — removing meta.owner fails OWN-01
         run: .venv/bin/python tests/governance/expect_own01.py
+
+      - name: Publish manifest
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-manifest
+          path: target/manifest.json
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Publish main manifest
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

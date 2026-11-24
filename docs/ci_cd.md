@@ -20,14 +20,18 @@ dispatches. It:
 5. loads the fixture seeds and creates empty model relations so unit tests can
    infer input schemas on a fresh runner;
 6. runs the focused dbt unit tests;
-7. downloads the latest successful `main` manifest, when one exists;
+7. downloads a state manifest: the pull request's base branch when that
+   branch has published `dbt-manifest`, otherwise the latest successful `main`
+   manifest (`dbt-manifest`, or the older `dbt-main-manifest`);
 8. builds modified nodes with their dependencies and descendants while
    skipping data tests in the slim step;
 9. runs the complete local DuckDB build and data-test suite;
 10. executes the local semantic contract validator;
 11. runs the governance gate unit tests and the governance quality gate;
 12. shows that removing `meta.owner` from `fct_arr_snapshot` fails the gate with `OWN-01`; and
-13. publishes the successful `main` manifest for future state comparison.
+13. publishes `dbt-manifest` from every successful run, and still publishes
+    `dbt-main-manifest` on `main`, so a later pull request can compare a
+    versioned contract with the branch it is based on.
 
 The first successful `main` run has no prior manifest, so modified-state
 selection is skipped. The complete build still runs.
