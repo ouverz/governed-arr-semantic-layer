@@ -24,8 +24,9 @@ For a reviewer-friendly walkthrough, start with
 
 - it is not a full finance system;
 - it is not a live production ingestion pipeline in the local lab;
-- it does not prove a hosted dbt Semantic Layer query path locally; and
-- it is intentionally scoped to one metric, not a broad analytics platform.
+- it does not prove a hosted dbt Semantic Layer query path locally;
+- it is intentionally scoped to one certified metric, not a broad analytics platform; and
+- the lending files are a synthetic source contract, not a certified balance, a days-past-due figure, or a credit decision.
 
 ## Portfolio Highlights
 
@@ -77,13 +78,38 @@ These two views show the shape of the system without making the README a wall of
 
 The project follows a pattern used by stronger revenue analytics teams: keep raw inputs separate, derive historical truth with effective dates, and expose a clean consumption layer on top. In practice that means the ARR logic is anchored in point-in-time snapshot facts rather than current-state rows, so month-end truth stays stable and explainable. The same separation also makes it easier to publish a certified dataset for BI or semantic consumption without asking downstream users to interpret raw source tables directly.
 
+## SME lending sources
+
+The same fictional customers also have a synthetic SME lending batch in
+[`seeds/lending/`](seeds/lending/). Eight named loans reuse the Salesforce
+`account_id` values, including one revolving credit line. Money is integer
+minor units plus `currency_code`. Every event has `effective_at`,
+`recorded_at`, and `_loaded_at`.
+
+This is the producer contract ([`contracts/sources/loan_events.yml`](contracts/sources/loan_events.yml))
+and the dbt source declaration. It is not a lending mart. Staging, the loan
+ledger, and month-end balances are not in the project yet. Regenerate the
+checked-in CSVs from the scenario table, then check them against the contract:
+
+```bash
+python3 scripts/generate_lending_data.py --golden
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python scripts/validate_source_contracts.py
+```
+
+`--seed` does not change the golden files. `--scale N` writes parquet under
+`data/lending/`, which is git-ignored, and needs the DuckDB package already
+installed in the dbt image.
+
 ## What is intentionally deferred
 
 This repo is scoped as a lab rather than a full production platform.
 Deferred items include live Metabase dashboards, recognized ARR reconciliation,
 production orchestration, row-level security, currency conversion, usage-based
-pricing, and historical type-2 account dimensions. The ARR marts carry
-`currency_code`, and the only certified value is EUR.
+pricing, historical type-2 account dimensions, and the lending staging models,
+ledger, and month-end mart. The ARR marts carry `currency_code`, and the only
+certified value is EUR. Lending amounts are minor units, and the golden
+currency is EUR.
 
 That boundary is deliberate: it keeps the case study focused on proving one metric deeply instead of spreading effort across too many unfinished surfaces.
 
@@ -141,3 +167,4 @@ make deploy-snowflake-semantic-view
 6. [`docs/change_examples/exclude_paused_subscriptions.md`](docs/change_examples/exclude_paused_subscriptions.md) for the metric-change example.
 7. [`models/snowflake_semantic/revenue_metrics.sql`](models/snowflake_semantic/revenue_metrics.sql) for the native Snowflake semantic view.
 8. [`docs/ci_cd.md`](docs/ci_cd.md) for GitHub Actions validation and Snowflake deployment.
+9. [`docs/adr/0004-loan-events-batch-vs-streaming.md`](docs/adr/0004-loan-events-batch-vs-streaming.md) and [`docs/adr/0005-synthetic-data-strategy.md`](docs/adr/0005-synthetic-data-strategy.md) for the lending batch and the synthetic-data tiers.

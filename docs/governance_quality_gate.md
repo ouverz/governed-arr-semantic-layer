@@ -29,4 +29,4 @@ Removing `meta.owner` from a public model fails with `OWN-01` and the model name
 
 ## What this gate does not do
 
-It does not check seeds, singular test SQL, or semantic metric definitions. Semantic definitions stay with `make semantic-validate`. It does not see models that are disabled in the manifest it was given. On DuckDB that includes `revenue_metrics`. It does not require an exposure. Exposures are added with a real consumer, not a placeholder.
+It does not check seeds, sources, singular test SQL, or semantic metric definitions. Semantic definitions stay with `make semantic-validate`. Source files are checked by `scripts/validate_source_contracts.py` against `contracts/sources/` before dbt runs. It does not see models that are disabled in the manifest it was given. On DuckDB that includes `revenue_metrics`. It does not require an exposure. Exposures are added with a real consumer, not a placeholder.

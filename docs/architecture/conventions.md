@@ -43,6 +43,7 @@ Status vocabularies are the `accepted_values` list on the column. ARR movements 
 - **Upstream ARR decimals.** Staging and intermediate amounts are outside MNY-02. The public mart is the enforced boundary.
 - **Snowflake semantic view.** `revenue_metrics` is disabled on DuckDB, so this gate does not see it. Its name is a dormant NAM-01 exception for a manifest where the model is enabled. Semantic metric definitions are checked by `make semantic-validate`.
 - **Geography values.** GEO-01 checks the column contract, not that every code is a real ISO country.
+- **Sources.** The gate checks models. A dbt source is not a model. The lending batch is checked by `scripts/validate_source_contracts.py` against `contracts/sources/loan_events.yml`, and the source node carries owner, freshness, and the contract path in `meta`.
 
 ## How to run
 
