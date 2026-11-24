@@ -1,0 +1,102 @@
+version: 2
+
+models:
+  - name: fct_loan_month_end
+    description: >
+      Outstanding principal and days past due for each loan at calendar
+      month-end, as known loan_knowledge_cutoff_days after that month-end.
+      The default is 5, so a posting recorded on 4 April is known at 31 March.
+      Balances come from int_lending__loan_ledger. Version 1. No downstream
+      consumer is wired yet.
+    latest_version: 1
+    config:
+      access: public
+      group: lending
+      contract:
+        enforced: true
+      meta:
+        owner: Data
+        business_owner: Credit
+        tier: certified
+        grain: loan_id × month_end_date
+        freshness_sla: "lab: month-end, known at month-end plus 5 days, rebuilt on demand"
+        availability: "lab: declared, not operated"
+        support_channel: data@arr-lab.example
+        consumers: []
+        primary_key:
+          - loan_id
+          - month_end_date
+    versions:
+      - v: 1
+        config:
+          alias: fct_loan_month_end
+    columns:
+      - name: loan_id
+        description: Loan identifier. Golden values are the scenario names.
+        data_type: varchar
+        data_tests: [not_null]
+      - name: month_end_date
+        description: Calendar month-end the balance is measured at.
+        data_type: date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: snapshot_date
+      - name: customer_id
+        description: Conformed customer. Mapped from the Salesforce account in dim_customer.
+        data_type: varchar
+        config:
+          meta:
+            key_role: conformed_customer
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customer')
+                field: customer_id
+      - name: product_id
+        description: TERM_SME or RCF_SME.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_id
+      - name: currency_code
+        description: ISO 4217 currency of outstanding_principal_minor. EUR in this lab.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["EUR"]
+      - name: outstanding_principal_minor
+        description: Principal still outstanding, in minor units, after disbursements, draws, repayments, and write-offs known at the cutoff.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: days_past_due
+        description: >
+          Calendar days from the earliest unpaid due date to month-end.
+          Zero when nothing is past due, including on the due date itself,
+          and zero after closure or write-off.
+        data_type: integer
+        data_tests: [not_null]
+      - name: dpd_bucket
+        description: current, 1_29, 30_59, 60_89, or 90_plus.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["current", "1_29", "30_59", "60_89", "90_plus"]
+      - name: loan_status
+        description: current, delinquent, closed, or written_off. Derived from the ledger, not stored on the source.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [current, delinquent, closed, written_off]

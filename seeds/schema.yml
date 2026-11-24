@@ -139,6 +139,25 @@ seeds:
       - name: expected_ending_arr
         data_tests: [not_null]
 
+  - name: expected_loan_month_end
+    description: >
+      Hand-calculated loan month-end balances and days past due at the default
+      5-day knowledge cutoff. One row per loan and month-end in the fixture window.
+    columns:
+      - name: loan_id
+        data_tests: [not_null]
+      - name: month_end_date
+        data_tests: [not_null]
+      - name: outstanding_principal_minor
+        data_tests: [not_null]
+      - name: days_past_due
+        data_tests: [not_null]
+      - name: loan_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [current, delinquent, closed, written_off]
+
   - name: expected_arr_movements
     description: Hand-classified account-level ARR movement acceptance fixture.
     columns:
