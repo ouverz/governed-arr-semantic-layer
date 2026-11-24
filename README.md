@@ -78,7 +78,7 @@ These two views show the shape of the system without making the README a wall of
 
 The project follows a pattern used by stronger revenue analytics teams: keep raw inputs separate, derive historical truth with effective dates, and expose a clean consumption layer on top. In practice that means the ARR logic is anchored in point-in-time snapshot facts rather than current-state rows, so month-end truth stays stable and explainable. The same separation also makes it easier to publish a certified dataset for BI or semantic consumption without asking downstream users to interpret raw source tables directly.
 
-## SME lending sources
+## SME lending
 
 The same fictional customers also have a synthetic SME lending batch in
 [`seeds/lending/`](seeds/lending/). Eight named loans reuse the Salesforce
@@ -87,9 +87,13 @@ minor units plus `currency_code`. Every event has `effective_at`,
 `recorded_at`, and `_loaded_at`.
 
 This is the producer contract ([`contracts/sources/loan_events.yml`](contracts/sources/loan_events.yml))
-and the dbt source declaration. It is not a lending mart. Staging, the loan
-ledger, and month-end balances are not in the project yet. Regenerate the
-checked-in CSVs from the scenario table, then check them against the contract:
+and the dbt source declaration. Staging keeps both timestamps. The loan
+ledger is the only balance calculation, and `fct_loan_month_end` (v1) publishes
+outstanding principal and days past due as known 5 days after month-end.
+`dim_customer` maps each Salesforce account to a conformed `customer_id`.
+No lending semantic metric is wired yet. The product spec is
+[`docs/data_products/loan_month_end.md`](docs/data_products/loan_month_end.md).
+Regenerate the checked-in CSVs from the scenario table, then check them against the contract:
 
 ```bash
 python3 scripts/generate_lending_data.py --golden
@@ -106,10 +110,9 @@ installed in the dbt image.
 This repo is scoped as a lab rather than a full production platform.
 Deferred items include live Metabase dashboards, recognized ARR reconciliation,
 production orchestration, row-level security, currency conversion, usage-based
-pricing, historical type-2 account dimensions, and the lending staging models,
-ledger, and month-end mart. The ARR marts carry `currency_code`, and the only
-certified value is EUR. Lending amounts are minor units, and the golden
-currency is EUR.
+pricing, historical type-2 account dimensions, and a lending semantic metric.
+The ARR marts carry `currency_code`, and the only certified value is EUR.
+Lending amounts are minor units, and the golden currency is EUR.
 
 That boundary is deliberate: it keeps the case study focused on proving one metric deeply instead of spreading effort across too many unfinished surfaces.
 
@@ -168,3 +171,4 @@ make deploy-snowflake-semantic-view
 7. [`models/snowflake_semantic/revenue_metrics.sql`](models/snowflake_semantic/revenue_metrics.sql) for the native Snowflake semantic view.
 8. [`docs/ci_cd.md`](docs/ci_cd.md) for GitHub Actions validation and Snowflake deployment.
 9. [`docs/adr/0004-loan-events-batch-vs-streaming.md`](docs/adr/0004-loan-events-batch-vs-streaming.md) and [`docs/adr/0005-synthetic-data-strategy.md`](docs/adr/0005-synthetic-data-strategy.md) for the lending batch and the synthetic-data tiers.
+10. [`docs/data_products/loan_month_end.md`](docs/data_products/loan_month_end.md) for the loan month-end product, and [`docs/data_products/production_grade_checklist.md`](docs/data_products/production_grade_checklist.md) for the same checklist applied to ARR and to that fact.
