@@ -21,6 +21,9 @@ vars:
   arr_paused_subscription_exclusion_start_date: "2025-04-01"
   arr_prod_history_start_date: "2020-01-01"
   arr_prod_reporting_start_date: "2021-01-01"
+  # Days after month-end during which a recorded posting still counts.
+  # 5 includes the 4 April posting on LN_LATE_POSTED, so 31 March is current.
+  loan_knowledge_cutoff_days: 5
 
 models:
   arr_semantic_layer_lab:
@@ -31,11 +34,15 @@ models:
       +schema: staging
       +access: private
       +group: revenue
+      lending:
+        +group: lending
     intermediate:
       +materialized: view
       +schema: intermediate
       +access: private
       +group: revenue
+      lending:
+        +group: lending
     data_quality:
       +materialized: view
       +schema: data_quality
@@ -49,6 +56,8 @@ models:
       +group: revenue
       core:
         +group: platform
+      lending:
+        +group: lending
     snowflake_semantic:
       +schema: semantic
       +tags: ["snowflake_semantic"]

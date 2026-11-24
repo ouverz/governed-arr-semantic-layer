@@ -1,0 +1,53 @@
+version: 2
+
+models:
+  - name: int_lending__loan_ledger
+    description: >
+      One row per lending event that can change a balance, a contractual due,
+      or a terminal status. Principal increases on disbursement and on a
+      revolving draw, and decreases on repayment principal and on write-off.
+      Interest does not change principal. Unearned interest cancelled by a
+      prepayment is not collected. A write-off does not also emit a closure.
+      The month-end fact reads this ledger and does not recompute balances
+      from the staged events.
+    columns:
+      - name: ledger_entry_id
+        description: Producer event_id. One ledger row per source event.
+        data_tests: [not_null, unique]
+      - name: loan_id
+        description: Loan the entry belongs to.
+        data_tests: [not_null]
+      - name: account_id
+        description: Salesforce account on the loan.
+        config:
+          meta:
+            key_role: salesforce_account
+        data_tests: [not_null]
+      - name: entry_type
+        description: >
+          disbursement, draw, repayment, write_off, closure, instalment_due,
+          or instalment_superseded.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - disbursement
+                  - draw
+                  - repayment
+                  - write_off
+                  - closure
+                  - instalment_due
+                  - instalment_superseded
+      - name: principal_delta_minor
+        description: Signed principal movement. Zero on dues, supersedes, and closure.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: effective_at
+        description: When the business event took effect. UTC.
+        data_type: timestamp
+        data_tests: [not_null]
+      - name: recorded_at
+        description: When the lending system committed the event. UTC.
+        data_type: timestamp
+        data_tests: [not_null]
