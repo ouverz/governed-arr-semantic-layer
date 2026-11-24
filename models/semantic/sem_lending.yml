@@ -1,0 +1,79 @@
+version: 2
+
+semantic_models:
+  - name: loan_month_end
+    description: >
+      Month-end loan balances. par30_ratio is the certified lending metric.
+      It is illustrative and is not a lender's delinquency policy.
+    model: ref('fct_loan_month_end')
+    defaults:
+      agg_time_dimension: month_end_date
+    entities:
+      - name: loan_month
+        type: primary
+        expr: loan_id || '|' || month_end_date
+      - name: customer
+        type: foreign
+        expr: customer_id
+      - name: product
+        type: foreign
+        expr: product_id
+    dimensions:
+      - name: month_end_date
+        description: Calendar month-end of the balance.
+        type: time
+        type_params:
+          time_granularity: month
+      - name: loan_status
+        description: current, delinquent, closed, or written_off.
+        type: categorical
+    measures:
+      - name: outstanding_principal_minor
+        description: Outstanding principal at the latest month-end in the queried range.
+        agg: sum
+        expr: outstanding_principal_minor
+        non_additive_dimension:
+          name: month_end_date
+          window_choice: max
+      - name: par30_outstanding_principal_minor
+        description: >
+          Outstanding principal that is 30 or more days past due, at the latest
+          month-end in the queried range. 30 is included.
+        agg: sum
+        expr: case when days_past_due >= 30 then outstanding_principal_minor else 0 end
+        non_additive_dimension:
+          name: month_end_date
+          window_choice: max
+
+metrics:
+  # dbt 1.11 will not parse a ratio unless the numerator and the denominator
+  # are themselves metrics. These two exist only so par30_ratio can be a ratio.
+  # They are not a second certified lending metric.
+  - name: outstanding_principal
+    description: >
+      Input to par30_ratio. Sum of outstanding principal at the latest
+      month-end in the queried range. Not certified on its own.
+    type: simple
+    label: Outstanding principal (PAR 30 input)
+    type_params:
+      measure: outstanding_principal_minor
+
+  - name: par30_outstanding_principal
+    description: >
+      Input to par30_ratio. Outstanding principal with days_past_due >= 30,
+      at the latest month-end in the queried range. Not certified on its own.
+    type: simple
+    label: PAR 30 principal (PAR 30 input)
+    type_params:
+      measure: par30_outstanding_principal_minor
+
+  - name: par30_ratio
+    description: >
+      Share of outstanding principal that is 30 or more days past due, at the
+      latest month-end in the queried range. Illustrative. Not a lender's
+      policy threshold. A sum of this ratio across months is not meaningful.
+    type: ratio
+    label: PAR 30 ratio
+    type_params:
+      numerator: par30_outstanding_principal
+      denominator: outstanding_principal
