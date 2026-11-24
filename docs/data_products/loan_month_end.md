@@ -45,9 +45,31 @@ Status is derived from those ledger rows: `written_off` if a write-off is known,
 
 Version 1, `latest_version: 1`, contract enforced. The relation alias is `fct_loan_month_end`. The node id is `fct_loan_month_end.v1`.
 
+## Metric
+
+`par30_ratio` is the certified lending metric. It is the share of outstanding principal with `days_past_due >= 30`, taken at the latest month-end in the query. Both the numerator and the denominator are non-additive over `month_end_date`, the same pattern as Ending ARR. A sum of the ratio across months is not a portfolio total.
+
+dbt 1.11 will not parse a ratio unless those two inputs are metrics. `outstanding_principal` and `par30_outstanding_principal` exist for that reason. They are not certified on their own.
+
+On the fixture, at the default 5-day cutoff:
+
+| Month-end | 30+ principal | Outstanding principal | Ratio |
+| --- | ---: | ---: | ---: |
+| 2025-03-31 | 500000 | 2150000 | 500000/2150000 |
+| 2025-05-31 | 200000 | 1100000 | 200000/1100000 |
+| 2025-06-30 | 0 | 700000 | 0 |
+
+`make semantic-validate` checks the metric shape and these three totals.
+
 ## Consumers
 
-None are wired. `meta.consumers` is empty. A MetricFlow model would be the first consumer, and it is not in this change. There is no exposure for a consumer that does not exist.
+`portfolio_par30` is the MetricFlow exposure. It depends on `par30_ratio` and `fct_loan_month_end` v1. `meta.consumers` lists that exposure. There is no other consumer.
+
+## Changelog
+
+Corrections and definition changes follow [ADR 0006](../adr/0006-restatement-policy.md).
+
+- v1. Published the month-end fact and `par30_ratio`. No prior version to restate.
 
 ## SLA
 

@@ -91,7 +91,8 @@ and the dbt source declaration. Staging keeps both timestamps. The loan
 ledger is the only balance calculation, and `fct_loan_month_end` (v1) publishes
 outstanding principal and days past due as known 5 days after month-end.
 `dim_customer` maps each Salesforce account to a conformed `customer_id`.
-No lending semantic metric is wired yet. The product spec is
+`par30_ratio` is the lending metric, and `portfolio_par30` is its MetricFlow
+exposure. The product spec is
 [`docs/data_products/loan_month_end.md`](docs/data_products/loan_month_end.md).
 Regenerate the checked-in CSVs from the scenario table, then check them against the contract:
 
@@ -110,7 +111,7 @@ installed in the dbt image.
 This repo is scoped as a lab rather than a full production platform.
 Deferred items include live Metabase dashboards, recognized ARR reconciliation,
 production orchestration, row-level security, currency conversion, usage-based
-pricing, historical type-2 account dimensions, and a lending semantic metric.
+pricing, and historical type-2 account dimensions.
 The ARR marts carry `currency_code`, and the only certified value is EUR.
 Lending amounts are minor units, and the golden currency is EUR.
 
