@@ -179,6 +179,7 @@ select
         when days_past_due <= 89 then '60_89'
         else '90_plus'
     end as dpd_bucket,
-    loan_status
+    loan_status,
+    cast(null as varchar) as servicer_reference
 from measured
 {% endmacro %}

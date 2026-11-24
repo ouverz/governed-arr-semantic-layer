@@ -70,6 +70,7 @@ On the fixture, at the default 5-day cutoff:
 Corrections and definition changes follow [ADR 0006](../adr/0006-restatement-policy.md).
 
 - v1. Published the month-end fact and `par30_ratio`. No prior version to restate.
+- v1, additive. Added nullable `servicer_reference`. The batch does not populate it. Not a new version, because the column is nullable and no existing column changed meaning.
 
 ## SLA
 
