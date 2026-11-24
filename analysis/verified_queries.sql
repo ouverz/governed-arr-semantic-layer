@@ -1,3 +1,5 @@
+{{ config(group='revenue') }}
+
 -- Reference mart consumer queries. These compile during dbt build but do not
 -- execute, and they do not prove dbt Semantic Layer metric behavior. Consumers
 -- aggregate the certified fact and never recreate line eligibility or

@@ -1,0 +1,224 @@
+version: 1
+contract: loan_events
+scope: >
+  Lab contract on synthetic data. The addresses are roles, not a staffed team.
+  This is not a live feed and it is not a lender's credit policy.
+
+producer:
+  system: Lending backend
+  owner: lending-backend@arr-lab.example
+consumer:
+  system: arr_semantic_layer_lab
+  owner: data@arr-lab.example
+
+# Daily batch is the decision in ADR 0004. The same columns are what a later
+# CDC or stream feed would land, so the transport can change without a new grain.
+delivery:
+  mode: daily_batch
+  timezone: UTC
+  arrives_by: "06:00"
+  grain: one immutable event per row
+  idempotency_key: event_id
+  file_order: not significant
+  redelivery: >
+    The same event_id with the same payload is a no-op. The same event_id
+    with a different payload is a failure. A correction is a new event_id.
+    The batch does not update a row in place.
+
+notification:
+  channel: lending-backend@arr-lab.example
+  additive_notice: at least 1 business day before the batch that first carries the change
+  breaking_notice: at least 60 days before the batch that ships the break
+  restatement: >
+    The producer tells the consumer before a batch that replaces a file
+    already delivered for an earlier business day.
+
+time:
+  effective_at: When the business event took effect. UTC.
+  recorded_at: When the lending system committed the event. UTC. Not before effective_at.
+  _loaded_at: When the warehouse batch landed the row. UTC. Not before recorded_at.
+  order: effective_at <= recorded_at <= _loaded_at
+
+units:
+  minor: >
+    Integer minor units of currency_code. EUR exponent is 2, so 100 minor = 1.00 EUR.
+    No fractional minor units are stored.
+  monthly_rate_bps: >
+    Illustrative simple monthly rate. 100 bps = 1 percent of that instalment's
+    opening principal. Not an APR.
+  timestamp: UTC literal YYYY-MM-DDTHH:MM:SSZ.
+  date: ISO business date YYYY-MM-DD, not a timestamp.
+
+dbt_source: models/staging/lending/_lending__sources.yml
+
+datasets:
+  - name: applications
+    file: seeds/lending/raw_lending__applications.csv
+    description: Credit application events. A declined or withdrawn application has no loan.
+    fields:
+      - {name: event_id, type: string, nullable: false, description: Idempotency key.}
+      - {name: event_type, type: string, nullable: false, enum: [submitted, approved, declined, withdrawn], description: Application lifecycle event.}
+      - {name: application_id, type: string, nullable: false, description: Stable application identifier.}
+      - {name: account_id, type: string, nullable: false, description: Salesforce account. Not a conformed customer id.}
+      - {name: product_id, type: string, nullable: false, enum: [TERM_SME, RCF_SME], description: TERM_SME is an instalment loan. RCF_SME is a revolving credit line.}
+      - {name: requested_amount_minor, type: integer, nullable: false, unit: minor, description: Amount the customer asked for.}
+      - {name: approved_amount_minor, type: integer, nullable: true, unit: minor, description: Set only on approved. Null on every other event.}
+      - {name: currency_code, type: string, nullable: false, enum: [EUR], description: ISO 4217 currency of the amounts.}
+      - {name: term_months, type: integer, nullable: true, description: Original term for TERM_SME. Null for a revolving line.}
+      - {name: effective_at, type: timestamp, nullable: false, description: When this application event took effect.}
+      - {name: recorded_at, type: timestamp, nullable: false, description: When the lending system committed it.}
+      - {name: _loaded_at, type: timestamp, nullable: false, description: When the warehouse batch landed the row.}
+    rules:
+      - {kind: unique, fields: [event_id]}
+      - {kind: timestamp_order, fields: [effective_at, recorded_at, _loaded_at]}
+      - {kind: present_iff, field: approved_amount_minor, when: [{field: event_type, equals: approved}]}
+      - {kind: present_iff, field: term_months, when: [{field: product_id, equals: TERM_SME}]}
+
+  - name: loans
+    file: seeds/lending/raw_lending__loans.csv
+    description: Loan lifecycle events. Not a current-state loan table.
+    fields:
+      - {name: event_id, type: string, nullable: false, description: Idempotency key.}
+      - {name: event_type, type: string, nullable: false, enum: [originated, restructured, defaulted, written_off, closed], description: Lifecycle event.}
+      - {name: loan_id, type: string, nullable: false, description: Stable loan identifier. In the golden book this is the scenario name.}
+      - {name: application_id, type: string, nullable: false, description: Application this loan came from.}
+      - {name: account_id, type: string, nullable: false, description: Salesforce account. Same value on every event for the loan.}
+      - {name: product_id, type: string, nullable: false, enum: [TERM_SME, RCF_SME], description: Product at origination. A restructure does not change it.}
+      - {name: currency_code, type: string, nullable: false, enum: [EUR], description: ISO 4217 currency of the amounts.}
+      - {name: principal_minor, type: integer, nullable: false, unit: minor, description: "Disbursed principal on originated (0 for an undrawn line), remaining principal on restructured, defaulted, and written_off, and 0 on closed."}
+      - {name: credit_limit_minor, type: integer, nullable: true, unit: minor, description: Revolving limit. Set only on originated RCF_SME.}
+      - {name: term_months, type: integer, nullable: true, description: Term on originated or restructured TERM_SME. Null otherwise.}
+      - {name: monthly_rate_bps, type: integer, nullable: true, description: Simple monthly rate in basis points. Set on originated and restructured.}
+      - {name: schedule_version, type: integer, nullable: true, description: "1 on originated, 2 on restructured, null otherwise."}
+      - {name: effective_at, type: timestamp, nullable: false, description: When this lifecycle event took effect.}
+      - {name: recorded_at, type: timestamp, nullable: false, description: When the lending system committed it.}
+      - {name: _loaded_at, type: timestamp, nullable: false, description: When the warehouse batch landed the row.}
+    rules:
+      - {kind: unique, fields: [event_id]}
+      - {kind: unique, fields: [loan_id], when: [{field: event_type, equals: originated}]}
+      - {kind: timestamp_order, fields: [effective_at, recorded_at, _loaded_at]}
+      - {kind: present_iff, field: credit_limit_minor, when: [{field: event_type, equals: originated}, {field: product_id, equals: RCF_SME}]}
+      - {kind: present_iff, field: term_months, when: [{field: event_type, in: [originated, restructured]}, {field: product_id, equals: TERM_SME}]}
+      - {kind: present_iff, field: monthly_rate_bps, when: [{field: event_type, in: [originated, restructured]}]}
+      - {kind: present_iff, field: schedule_version, when: [{field: event_type, in: [originated, restructured]}]}
+      - {kind: const_when, field: schedule_version, value: 1, when: [{field: event_type, equals: originated}]}
+      - {kind: const_when, field: schedule_version, value: 2, when: [{field: event_type, equals: restructured}]}
+      - {kind: const_when, field: principal_minor, value: 0, when: [{field: event_type, equals: closed}]}
+
+  - name: repayment_schedule
+    file: seeds/lending/raw_lending__repayment_schedule.csv
+    description: Instalments becoming due, and instalments cancelled by prepayment or restructure.
+    fields:
+      - {name: event_id, type: string, nullable: false, description: Idempotency key.}
+      - {name: event_type, type: string, nullable: false, enum: [instalment_scheduled, instalment_superseded], description: Scheduled adds a due row. Superseded cancels that same instalment_id.}
+      - {name: loan_id, type: string, nullable: false, description: Loan the instalment belongs to.}
+      - {name: account_id, type: string, nullable: false, description: Salesforce account on the loan.}
+      - {name: schedule_version, type: integer, nullable: false, description: 1 is the original schedule. 2 is the schedule after a restructure.}
+      - {name: instalment_id, type: string, nullable: false, description: Stable id of the instalment across scheduled and superseded.}
+      - {name: instalment_number, type: integer, nullable: false, description: 1-based position within the schedule version.}
+      - {name: due_date, type: date, nullable: false, description: Business date the instalment is due.}
+      - {name: principal_due_minor, type: integer, nullable: false, unit: minor, description: Principal due. 0 on a revolving interest-only bill.}
+      - {name: interest_due_minor, type: integer, nullable: false, unit: minor, description: Interest due for this instalment.}
+      - {name: currency_code, type: string, nullable: false, enum: [EUR], description: ISO 4217 currency of the amounts.}
+      - {name: effective_at, type: timestamp, nullable: false, description: "When this schedule row took effect. Origination, restructure, or statement time. Not the due date, except when the bill is issued on the due date."}
+      - {name: recorded_at, type: timestamp, nullable: false, description: When the lending system committed it.}
+      - {name: _loaded_at, type: timestamp, nullable: false, description: When the warehouse batch landed the row.}
+    rules:
+      - {kind: unique, fields: [event_id]}
+      - {kind: unique, fields: [instalment_id, event_type]}
+      - {kind: timestamp_order, fields: [effective_at, recorded_at, _loaded_at]}
+      - kind: supersede_matches
+        fields: [loan_id, account_id, schedule_version, instalment_number, due_date, principal_due_minor, interest_due_minor, currency_code]
+
+  - name: repayments
+    file: seeds/lending/raw_lending__repayments.csv
+    description: >
+      Cash posted to the loan. Draws live here as draw_posted because a revolving
+      line's cash in and cash out are one feed. The filename stays repayments.
+    fields:
+      - {name: event_id, type: string, nullable: false, description: Idempotency key.}
+      - {name: event_type, type: string, nullable: false, enum: [repayment_posted, draw_posted], description: repayment_posted is cash in. draw_posted is a revolving draw.}
+      - {name: loan_id, type: string, nullable: false, description: Loan the cash posted to.}
+      - {name: account_id, type: string, nullable: false, description: Salesforce account on the loan.}
+      - {name: amount_minor, type: integer, nullable: false, unit: minor, description: Cash amount. Always positive. Direction is event_type.}
+      - {name: principal_minor, type: integer, nullable: false, unit: minor, description: Portion that changes principal. Equal to amount_minor on a draw.}
+      - {name: interest_minor, type: integer, nullable: false, unit: minor, description: Portion that pays interest. 0 on a draw. principal_minor + interest_minor = amount_minor.}
+      - {name: currency_code, type: string, nullable: false, enum: [EUR], description: ISO 4217 currency of the amounts.}
+      - {name: effective_at, type: timestamp, nullable: false, description: Value date. When the cash took effect.}
+      - {name: recorded_at, type: timestamp, nullable: false, description: When the lending system committed the posting. May be after effective_at.}
+      - {name: _loaded_at, type: timestamp, nullable: false, description: When the warehouse batch landed the row.}
+    rules:
+      - {kind: unique, fields: [event_id]}
+      - {kind: timestamp_order, fields: [effective_at, recorded_at, _loaded_at]}
+      - {kind: sum_equals, parts: [principal_minor, interest_minor], total: amount_minor}
+      - {kind: const_when, field: interest_minor, value: 0, when: [{field: event_type, equals: draw_posted}]}
+
+checks:
+  - kind: references
+    child: loans
+    child_fields: [application_id]
+    parent: applications
+    parent_fields: [application_id]
+  - kind: references
+    child: loans
+    child_fields: [application_id]
+    child_when: [{field: event_type, equals: originated}]
+    parent: applications
+    parent_fields: [application_id]
+    parent_when: [{field: event_type, equals: approved}]
+  - kind: references
+    child: repayment_schedule
+    child_fields: [loan_id]
+    parent: loans
+    parent_fields: [loan_id]
+    parent_when: [{field: event_type, equals: originated}]
+  - kind: references
+    child: repayments
+    child_fields: [loan_id]
+    parent: loans
+    parent_fields: [loan_id]
+    parent_when: [{field: event_type, equals: originated}]
+  - kind: matches_parent
+    child: loans
+    key: [loan_id]
+    fields: [application_id, account_id, product_id, currency_code]
+    parent: loans
+    parent_when: [{field: event_type, equals: originated}]
+  - kind: matches_parent
+    child: repayment_schedule
+    key: [loan_id]
+    fields: [account_id, currency_code]
+    parent: loans
+    parent_when: [{field: event_type, equals: originated}]
+  - kind: matches_parent
+    child: repayments
+    key: [loan_id]
+    fields: [account_id, currency_code]
+    parent: loans
+    parent_when: [{field: event_type, equals: originated}]
+
+# A new currency_code is breaking on purpose. An unknown currency must not be
+# summed as if it were EUR. A new event_type is additive only for a consumer
+# that keeps an unknown bucket and does not drop the row.
+evolution:
+  - change: Add a nullable column
+    class: additive
+    consumer: Ignore the column until a versioned model reads it.
+  - change: Add an event_type value
+    class: additive
+    consumer: >
+      Keep an unknown bucket and do not drop the row. A consumer that rejects
+      an unknown event_type treats this change as breaking.
+  - change: Add a currency_code value
+    class: breaking
+    why: An unknown currency must not be summed with EUR. Money has no safe unknown bucket.
+  - change: Rename or remove a column, narrow a type, or make a nullable column required
+    class: breaking
+  - change: Change the meaning of an existing field or enum value without renaming it
+    class: breaking
+    why: A schema diff does not see it. It needs a new contract version or a golden fixture.
+  - change: Correct a wrong payload
+    class: restatement
+    why: New event_id, or a redelivered file after the restatement notice. Not a silent overwrite.
+
+deprecation_window: one contract version and 60 days, lab terms

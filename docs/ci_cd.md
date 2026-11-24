@@ -13,18 +13,21 @@ rules can differ.
 dispatches. It:
 
 1. creates the ignored runtime `profiles.yml` from `profiles.example.yml`;
-2. installs dbt packages;
-3. parses the DuckDB, isolated Snowflake development, and production targets;
-4. loads the fixture seeds and creates empty model relations so unit tests can
+2. installs `requirements-dev.txt` and validates `contracts/sources/` against
+   the lending seed files, before dbt, including the generator and contract tests;
+3. installs dbt packages and writes a small scale lending parquet under `data/`;
+4. parses the DuckDB, isolated Snowflake development, and production targets;
+5. loads the fixture seeds and creates empty model relations so unit tests can
    infer input schemas on a fresh runner;
-5. runs the focused dbt unit tests;
-6. downloads the latest successful `main` manifest, when one exists;
-7. builds modified nodes with their dependencies and descendants while
+6. runs the focused dbt unit tests;
+7. downloads the latest successful `main` manifest, when one exists;
+8. builds modified nodes with their dependencies and descendants while
    skipping data tests in the slim step;
-8. runs the complete local DuckDB build and data-test suite;
-9. executes the local semantic contract validator;
-10. runs the governance quality gate; and
-11. publishes the successful `main` manifest for future state comparison.
+9. runs the complete local DuckDB build and data-test suite;
+10. executes the local semantic contract validator;
+11. runs the governance gate unit tests and the governance quality gate;
+12. shows that removing `meta.owner` from `fct_arr_snapshot` fails the gate with `OWN-01`; and
+13. publishes the successful `main` manifest for future state comparison.
 
 The first successful `main` run has no prior manifest, so modified-state
 selection is skipped. The complete build still runs.
@@ -34,12 +37,15 @@ replacement for the complete local build. Prefixing and suffixing
 `state:modified` with `+` includes required ancestors and affected descendants
 in the fresh CI database. The slim step skips data tests because partial
 selection can leave some test contexts under-populated; the full `dbt build`
-later in CI still runs the complete test set.
+later in CI still runs the complete test set. At this project size the full
+build is cheap, so the slim build does not replace it.
 
-The governance quality gate runs `make governance-check`. It validates that
-required metric-product controls exist, including the metric contract, owners,
-certified grain, semantic model, data-quality summary, expected fixtures,
-critical business tests, and CI validation hooks.
+The governance quality gate runs `make governance-check` after the manifest
+exists. It checks every enabled model against `governance/policy.yml`. The
+step name stays `Validate governance quality gate`. A following step removes
+`meta.owner` from `fct_arr_snapshot` in a copy of that manifest and requires
+the gate to fail with `OWN-01 fct_arr_snapshot`. That step passes only when
+the gate fails for that reason.
 
 ## GitHub Configuration
 

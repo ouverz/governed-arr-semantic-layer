@@ -1,4 +1,6 @@
-.PHONY: build build-prod build-snowflake-dev clean debug debug-prod debug-snowflake-dev deploy-snowflake-semantic-view deps docs docs-serve governance-check inspect query refresh refresh-prod semantic-validate unit-test
+.PHONY: build build-prod build-snowflake-dev clean debug debug-prod debug-snowflake-dev deploy-snowflake-semantic-view deps docs docs-serve governance-check governance-test inspect lending-fixtures query refresh refresh-prod semantic-validate source-contracts unit-test
+
+PYTHON ?= python3
 
 deps:
 	docker compose run --rm dbt deps
@@ -44,7 +46,16 @@ docs-serve:
 	docker compose run --rm --service-ports dbt docs serve --host 0.0.0.0 --port 8080
 
 governance-check:
-	python3 scripts/governance_check.py
+	$(PYTHON) scripts/governance_check.py
+
+governance-test:
+	$(PYTHON) -m pytest tests/governance -q
+
+lending-fixtures:
+	$(PYTHON) scripts/generate_lending_data.py --golden
+
+source-contracts:
+	$(PYTHON) scripts/validate_source_contracts.py
 
 inspect:
 	docker compose run --rm --entrypoint python dbt scripts/inspect_duckdb.py

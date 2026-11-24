@@ -6,35 +6,89 @@ models:
       Daily time spine required by the dbt semantic layer. The local fixture
       range is fixed; production begins before the reporting range and advances
       through the current date unless an explicit end date is supplied.
+      The model name is a dated NAM-01 exception.
+    config:
+      access: public
+      group: platform
+      contract:
+        enforced: true
+      meta:
+        owner: Data
+        business_owner: Data
+        tier: supporting
+        grain: date_day
+        freshness_sla: "lab: daily spine rebuilt with the fixture window"
+        primary_key:
+          - date_day
     time_spine:
       standard_granularity_column: date_day
     columns:
       - name: date_day
         description: One calendar day in the configured history-through-reporting range.
+        data_type: date
         granularity: day
         data_tests: [not_null, unique]
 
   - name: dim_account
-    description: Current account attributes approved for Ending ARR slicing.
+    description: >
+      Current account attributes approved for Ending ARR slicing. This is the
+      Salesforce account, not a conformed customer dimension, and it is not
+      historical.
+    config:
+      access: public
+      group: revenue
+      contract:
+        enforced: true
+      meta:
+        owner: Data
+        business_owner: RevOps
+        tier: supporting
+        grain: account_id (current state)
+        freshness_sla: "lab: current-state fixture, rebuilt on demand"
+        primary_key:
+          - account_id
     columns:
       - name: account_id
-        description: Stable account identifier.
+        description: >
+          Salesforce account identifier. customer_id is the conformed key
+          when a model needs one.
+        data_type: varchar
+        config:
+          meta:
+            key_role: salesforce_account
         data_tests: [not_null, unique]
       - name: account_name
         description: Display name of the account.
+        data_type: varchar
         data_tests: [not_null]
       - name: segment
         description: Current commercial segment.
+        data_type: varchar
         data_tests: [not_null]
       - name: region
         description: Current commercial region.
+        data_type: varchar
         data_tests: [not_null]
 
   - name: dim_date
     description: >
       Approved calendar month-end snapshot dates, including pre-reporting
       history used to classify movements correctly.
+    config:
+      access: public
+      group: platform
+      contract:
+        enforced: true
+      meta:
+        owner: Data
+        business_owner: Data
+        tier: supporting
+        grain: snapshot_date
+        freshness_sla: "lab: month-end dates from the fixture window"
+        primary_key:
+          - snapshot_date
     columns:
       - name: snapshot_date
         description: Calendar month-end date.
+        data_type: date
         data_tests: [not_null, unique]

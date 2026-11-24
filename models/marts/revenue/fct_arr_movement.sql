@@ -24,15 +24,17 @@ arr_by_account as (
     select
         snapshot_date,
         account_id,
+        currency_code,
         sum(ending_arr) as ending_arr
     from {{ ref('fct_arr_snapshot') }}
-    group by 1, 2
+    group by 1, 2, 3
 ),
 
 balances as (
     select
         account_months.snapshot_date,
         account_months.account_id,
+        coalesce(arr_by_account.currency_code, 'EUR') as currency_code,
         cast(coalesce(arr_by_account.ending_arr, 0) as decimal(18, 2)) as ending_arr
     from account_months
     left join arr_by_account
@@ -44,10 +46,12 @@ with_history as (
     select
         snapshot_date,
         account_id,
+        currency_code,
         cast(
             coalesce(
                 lag(ending_arr) over (
-                    partition by account_id order by snapshot_date
+                    partition by account_id, currency_code
+                    order by snapshot_date
                 ),
                 0
             ) as decimal(18, 2)
@@ -55,7 +59,7 @@ with_history as (
         ending_arr,
         coalesce(
             max(ending_arr) over (
-                partition by account_id
+                partition by account_id, currency_code
                 order by snapshot_date
                 rows between unbounded preceding and 1 preceding
             ),
@@ -68,6 +72,7 @@ classified as (
     select
         snapshot_date,
         account_id,
+        currency_code,
         beginning_arr,
         ending_arr,
         cast(ending_arr - beginning_arr as decimal(18, 2)) as movement_amount,
@@ -90,6 +95,7 @@ classified as (
 select
     snapshot_date,
     account_id,
+    currency_code,
     beginning_arr,
     ending_arr,
     movement_amount,

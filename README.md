@@ -24,8 +24,9 @@ For a reviewer-friendly walkthrough, start with
 
 - it is not a full finance system;
 - it is not a live production ingestion pipeline in the local lab;
-- it does not prove a hosted dbt Semantic Layer query path locally; and
-- it is intentionally scoped to one metric, not a broad analytics platform.
+- it does not prove a hosted dbt Semantic Layer query path locally;
+- it is intentionally scoped to one certified metric, not a broad analytics platform; and
+- the lending files are a synthetic source contract, not a certified balance, a days-past-due figure, or a credit decision.
 
 ## Portfolio Highlights
 
@@ -33,14 +34,14 @@ For a reviewer-friendly walkthrough, start with
 - Real ARR edge cases: billing intervals, discounts, exclusions, churn, reactivation, and renewals.
 - A documented metric contract, singular business tests, and model/unit tests that prove the logic.
 - Data-quality observability models around the ARR staging inputs.
-- A governance quality gate that checks required metric-product controls.
+- A governance quality gate that checks every model against `governance/policy.yml`, not a list of file names.
 - A documented metric-change example for excluding paused subscriptions prospectively.
 - A governed consumption story that distinguishes certified BI and AI reuse from raw-table interpretation.
 - A reproducible local build that reviewers can run with Docker only.
 
 ## Operating-model controls
 
-The project includes a data-quality observability layer for completeness, validity, duplicates, freshness/coverage, and referential integrity across ARR staging inputs. It also includes a governance quality gate that checks required artifacts such as the metric contract, owners, certified grain, semantic model, fixtures, business tests, and CI validation.
+The project includes a data-quality observability layer for completeness, validity, duplicates, freshness/coverage, and referential integrity across ARR staging inputs. It also includes a governance quality gate that reads the dbt manifest and checks naming, ownership, access, contracts, grain, and money rules. The conventions are in [`docs/architecture/conventions.md`](docs/architecture/conventions.md).
 
 See [`docs/data_quality.md`](docs/data_quality.md), [`docs/governance_quality_gate.md`](docs/governance_quality_gate.md), and [`docs/change_examples/exclude_paused_subscriptions.md`](docs/change_examples/exclude_paused_subscriptions.md).
 
@@ -77,12 +78,38 @@ These two views show the shape of the system without making the README a wall of
 
 The project follows a pattern used by stronger revenue analytics teams: keep raw inputs separate, derive historical truth with effective dates, and expose a clean consumption layer on top. In practice that means the ARR logic is anchored in point-in-time snapshot facts rather than current-state rows, so month-end truth stays stable and explainable. The same separation also makes it easier to publish a certified dataset for BI or semantic consumption without asking downstream users to interpret raw source tables directly.
 
+## SME lending sources
+
+The same fictional customers also have a synthetic SME lending batch in
+[`seeds/lending/`](seeds/lending/). Eight named loans reuse the Salesforce
+`account_id` values, including one revolving credit line. Money is integer
+minor units plus `currency_code`. Every event has `effective_at`,
+`recorded_at`, and `_loaded_at`.
+
+This is the producer contract ([`contracts/sources/loan_events.yml`](contracts/sources/loan_events.yml))
+and the dbt source declaration. It is not a lending mart. Staging, the loan
+ledger, and month-end balances are not in the project yet. Regenerate the
+checked-in CSVs from the scenario table, then check them against the contract:
+
+```bash
+python3 scripts/generate_lending_data.py --golden
+python3 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python scripts/validate_source_contracts.py
+```
+
+`--seed` does not change the golden files. `--scale N` writes parquet under
+`data/lending/`, which is git-ignored, and needs the DuckDB package already
+installed in the dbt image.
+
 ## What is intentionally deferred
 
 This repo is scoped as a lab rather than a full production platform.
 Deferred items include live Metabase dashboards, recognized ARR reconciliation,
-production orchestration, row-level security, multi-currency, usage-based
-pricing, and historical type-2 account dimensions.
+production orchestration, row-level security, currency conversion, usage-based
+pricing, historical type-2 account dimensions, and the lending staging models,
+ledger, and month-end mart. The ARR marts carry `currency_code`, and the only
+certified value is EUR. Lending amounts are minor units, and the golden
+currency is EUR.
 
 That boundary is deliberate: it keeps the case study focused on proving one metric deeply instead of spreading effort across too many unfinished surfaces.
 
@@ -136,7 +163,8 @@ make deploy-snowflake-semantic-view
 2. [`docs/metric_contract_arr.md`](docs/metric_contract_arr.md) for the certified metric contract.
 3. [`docs/singular_business_tests.md`](docs/singular_business_tests.md) for the human-readable test catalog.
 4. [`docs/data_quality.md`](docs/data_quality.md) for the data-quality observability layer.
-5. [`docs/governance_quality_gate.md`](docs/governance_quality_gate.md) for automated governance checks.
+5. [`docs/governance_quality_gate.md`](docs/governance_quality_gate.md) for the manifest governance gate, and [`docs/architecture/conventions.md`](docs/architecture/conventions.md) for the rule ids.
 6. [`docs/change_examples/exclude_paused_subscriptions.md`](docs/change_examples/exclude_paused_subscriptions.md) for the metric-change example.
 7. [`models/snowflake_semantic/revenue_metrics.sql`](models/snowflake_semantic/revenue_metrics.sql) for the native Snowflake semantic view.
 8. [`docs/ci_cd.md`](docs/ci_cd.md) for GitHub Actions validation and Snowflake deployment.
+9. [`docs/adr/0004-loan-events-batch-vs-streaming.md`](docs/adr/0004-loan-events-batch-vs-streaming.md) and [`docs/adr/0005-synthetic-data-strategy.md`](docs/adr/0005-synthetic-data-strategy.md) for the lending batch and the synthetic-data tiers.

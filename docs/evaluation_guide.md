@@ -12,7 +12,7 @@ The project demonstrates a governed ARR operating model:
 2. certified Ending ARR is exposed from `fct_arr_snapshot`;
 3. ARR movement analysis is exposed from `fct_arr_movement`;
 4. data-quality monitoring is exposed through the `dq_arr__*` models;
-5. metric governance is checked by `scripts/governance_check.py`;
+5. model conventions are checked by `scripts/governance_check.py` against `governance/policy.yml`;
 6. dbt semantic meaning is represented by `models/semantic/sem_arr.yml`; and
 7. Snowflake consumption is represented by the native semantic view
    `ARR_LAB.SEMANTIC.REVENUE_METRICS`.
@@ -84,6 +84,19 @@ make semantic-validate
 make governance-check
 make query
 ```
+
+The lending source contract is separate from the ARR metric. It checks the
+synthetic batch before dbt transforms it:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pytest tests/lending tests/source_contracts -q
+.venv/bin/python scripts/validate_source_contracts.py
+```
+
+An unknown `event_type` fails that command and names the file, the line, and
+the field. The dbt source is declared. No lending mart is built from it yet.
 
 Expected `make query` output:
 

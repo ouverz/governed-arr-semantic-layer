@@ -18,6 +18,10 @@ models:
         description: Percentage of required field values present.
       - name: quality_status
         description: pass when no required values are missing; otherwise fail.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pass, fail]
 
   - name: dq_arr__validity
     description: Monitors logical validity checks for ARR staging inputs.
@@ -46,6 +50,10 @@ models:
         description: Percentage of validity checks passing.
       - name: quality_status
         description: pass when no invalid values are detected; otherwise fail.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pass, fail]
 
   - name: dq_arr__duplicates
     description: Monitors duplicate identifier risk across ARR source entities.
@@ -64,6 +72,10 @@ models:
         description: Percentage of records represented by unique identifiers.
       - name: quality_status
         description: pass when no duplicate identifiers are detected; otherwise fail.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pass, fail]
 
   - name: dq_arr__freshness
     description: Reports fixture business-date coverage for the seed-based ARR lab.
@@ -80,6 +92,10 @@ models:
         description: Latest modeled ARR snapshot date available.
       - name: coverage_status
         description: pass when the fixture covers the expected reporting window.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pass, fail]
       - name: notes
         description: Context explaining that this is seed coverage, not ingestion freshness.
 
@@ -98,6 +114,10 @@ models:
         description: Child records without a matching parent record.
       - name: integrity_status
         description: pass when no orphan records are detected; otherwise fail.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pass, fail]
 
   - name: dq_arr__summary
     description: Dashboard-style rollup of the ARR data-quality observability layer.
@@ -116,3 +136,7 @@ models:
         description: Percentage of component checks passing.
       - name: quality_status
         description: pass, warn, or fail status for the quality area.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [pass, warn, fail]

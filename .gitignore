@@ -3,6 +3,7 @@
 .env
 __pycache__/
 *.py[cod]
+.venv/
 dbt_packages/
 logs/
 target/
