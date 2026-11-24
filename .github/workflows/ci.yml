@@ -86,8 +86,19 @@ jobs:
       - name: Validate semantic contract
         run: make semantic-validate
 
+      - name: Install governance gate dependencies
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install -r requirements-dev.txt
+
+      - name: Test governance gate
+        run: .venv/bin/pytest tests/governance -q
+
       - name: Validate governance quality gate
-        run: make governance-check
+        run: make governance-check PYTHON=.venv/bin/python
+
+      - name: Evidence — removing meta.owner fails OWN-01
+        run: .venv/bin/python tests/governance/expect_own01.py
 
       - name: Publish main manifest
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -1,0 +1,19 @@
+version: 2
+
+groups:
+  - name: revenue
+    owner:
+      name: Data
+      email: data@arr-lab.example
+  - name: lending
+    owner:
+      name: Data
+      email: data@arr-lab.example
+  - name: credit_risk
+    owner:
+      name: Data
+      email: data@arr-lab.example
+  - name: platform
+    owner:
+      name: Data
+      email: data@arr-lab.example

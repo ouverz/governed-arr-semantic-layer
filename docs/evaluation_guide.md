@@ -12,7 +12,7 @@ The project demonstrates a governed ARR operating model:
 2. certified Ending ARR is exposed from `fct_arr_snapshot`;
 3. ARR movement analysis is exposed from `fct_arr_movement`;
 4. data-quality monitoring is exposed through the `dq_arr__*` models;
-5. metric governance is checked by `scripts/governance_check.py`;
+5. model conventions are checked by `scripts/governance_check.py` against `governance/policy.yml`;
 6. dbt semantic meaning is represented by `models/semantic/sem_arr.yml`; and
 7. Snowflake consumption is represented by the native semantic view
    `ARR_LAB.SEMANTIC.REVENUE_METRICS`.

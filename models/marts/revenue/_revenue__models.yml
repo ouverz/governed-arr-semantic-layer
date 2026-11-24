@@ -4,10 +4,24 @@ models:
   - name: fct_arr_snapshot
     description: >
       Certified Ending ARR at calendar month-end, aggregated to snapshot date,
-      account, subscription, and product family.
+      account, subscription, and product family. currency_code is EUR for every
+      row; amounts stay decimal under the dated MNY-02 exception.
     config:
+      access: public
+      group: revenue
       contract:
         enforced: true
+      meta:
+        owner: Data
+        business_owner: RevOps
+        tier: certified
+        grain: snapshot_date × account_id × subscription_id × product_family
+        freshness_sla: "lab: calendar month-end fixture, rebuilt on demand"
+        primary_key:
+          - snapshot_date
+          - account_id
+          - subscription_id
+          - product_family
     columns:
       - name: snapshot_date
         description: Calendar month-end on which ARR is measured.
@@ -19,8 +33,13 @@ models:
                 to: ref('dim_date')
                 field: snapshot_date
       - name: account_id
-        description: Account that owns the active subscription.
+        description: >
+          Salesforce account that owns the active subscription. The conformed
+          customer key, when a second product needs it, is customer_id.
         data_type: varchar
+        config:
+          meta:
+            key_role: salesforce_account
         data_tests:
           - not_null
           - relationships:
@@ -35,8 +54,16 @@ models:
         description: Eligible recurring product family.
         data_type: varchar
         data_tests: [not_null]
+      - name: currency_code
+        description: ISO 4217 currency of ending_arr. Constant EUR in this lab.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["EUR"]
       - name: ending_arr
-        description: Annualized net recurring value active at month-end.
+        description: Annualized net recurring value active at month-end, in currency_code.
         data_type: decimal(18,2)
         data_tests: [not_null]
 
@@ -46,22 +73,47 @@ models:
       month-end snapshots. Production calculates balances from an earlier
       history start and publishes movements only from the configured reporting
       start, preventing existing accounts from being classified as new merely
-      because reporting begins.
+      because reporting begins. currency_code is taken from the snapshot and
+      is EUR for every published row.
     config:
+      access: public
+      group: revenue
       contract:
         enforced: true
+      meta:
+        owner: Data
+        business_owner: RevOps
+        tier: certified
+        grain: snapshot_date × account_id
+        freshness_sla: "lab: calendar month-end fixture, rebuilt on demand"
+        primary_key:
+          - snapshot_date
+          - account_id
     columns:
       - name: snapshot_date
         description: Month-end at which the movement is recognized.
         data_type: date
         data_tests: [not_null]
       - name: account_id
-        description: Account experiencing the ARR movement.
+        description: >
+          Salesforce account experiencing the ARR movement. customer_id is the
+          conformed key when a model needs one.
         data_type: varchar
+        config:
+          meta:
+            key_role: salesforce_account
         data_tests:
           - not_null
           - relationships:
               arguments: {to: ref('dim_account'), field: account_id}
+      - name: currency_code
+        description: ISO 4217 currency of the movement amounts. Constant EUR in this lab.
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["EUR"]
       - name: beginning_arr
         description: Prior month Ending ARR.
         data_type: decimal(18,2)

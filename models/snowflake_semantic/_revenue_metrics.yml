@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: revenue_metrics
+    description: >
+      Snowflake semantic view over the certified ARR marts. The model is
+      enabled only when the target is Snowflake, so the DuckDB governance
+      manifest does not include it. The relation name is a dated NAM-01
+      exception; new semantic SQL models use the sem_ prefix.
+    config:
+      meta:
+        owner: Data

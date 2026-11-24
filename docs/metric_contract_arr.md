@@ -7,7 +7,7 @@
 - **Technical owner:** Data
 - **Status:** MVP certified
 - **Reporting cadence:** Calendar month-end
-- **Currency:** EUR only
+- **Currency:** EUR only. `fct_arr_snapshot` and `fct_arr_movement` carry `currency_code` = `EUR`. Amounts remain `decimal(18,2)` under a dated governance exception (ADR 0002).
 
 ## Definition
 
@@ -83,3 +83,4 @@ Data approval, implementation review, and release notes.
 ## Change Log
 
 - `2025-04-01`: paused subscriptions are excluded from certified Ending ARR prospectively. Prior certified periods are not restated.
+- `2026-11-24`: added `currency_code` (constant `EUR`) to `fct_arr_snapshot` and `fct_arr_movement`. Additive. Certified Ending ARR amounts are unchanged, and the expected-value seeds are unchanged. No metric version bump.

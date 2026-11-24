@@ -1,0 +1,127 @@
+version: 1
+
+# Allowed dbt groups. A new product joins by setting one of these on its
+# models. Adding a group here is a policy change, not a gate code change.
+groups:
+  - revenue
+  - lending
+  - credit_risk
+  - platform
+
+# First matching path_prefix wins by longest prefix. contract: true means a
+# public model in that layer must enforce a column contract.
+layers:
+  - name: staging
+    path_prefix: models/staging/
+    name_prefixes: [stg_]
+    access: private
+    contract: false
+  - name: intermediate
+    path_prefix: models/intermediate/
+    name_prefixes: [int_]
+    access: private
+    contract: false
+  - name: marts
+    path_prefix: models/marts/
+    name_prefixes: [fct_, dim_]
+    access: public
+    contract: true
+  - name: data_quality
+    path_prefix: models/data_quality/
+    name_prefixes: [dq_]
+    access: private
+    contract: false
+  - name: features
+    path_prefix: models/features/
+    name_prefixes: [feat_]
+    access: public
+    contract: true
+  - name: decisioning
+    path_prefix: models/decisioning/
+    name_prefixes: [dec_]
+    access: public
+    contract: true
+  - name: ml
+    path_prefix: models/ml/
+    name_prefixes: [ml_]
+    access: public
+    contract: true
+  - name: snowflake_semantic
+    path_prefix: models/snowflake_semantic/
+    name_prefixes: [sem_]
+    access: protected
+    contract: false
+
+rules:
+  - id: NAM-01
+    kind: name_prefix
+  - id: LAY-01
+    kind: known_layer
+  - id: GRP-01
+    kind: group_allowed
+  - id: ACC-01
+    kind: access_matches_layer
+  - id: OWN-01
+    kind: required_meta
+    key: owner
+  - id: OWN-02
+    kind: required_meta
+    key: business_owner
+    when_access: [public]
+  - id: TIR-01
+    kind: required_meta
+    key: tier
+    when_access: [public]
+    allowed: [certified, supporting]
+  - id: GRN-01
+    kind: required_meta
+    key: grain
+    when_access: [public]
+  - id: SLA-01
+    kind: required_meta
+    key: freshness_sla
+    when_access: [public]
+  - id: KEY-01
+    kind: primary_key
+    meta_key: primary_key
+    when_access: [public]
+  - id: KEY-02
+    kind: key_role
+    roles:
+      account_id: salesforce_account
+      customer_id: conformed_customer
+  - id: CTR-01
+    kind: contract
+  - id: MNY-01
+    kind: currency_column
+    when_access: [public]
+    amount_regex: '(^|_)(arr|amount|price|balance|principal|fee|revenue)($|_)|_minor$'
+    currency_column: currency_code
+    currency_types: [varchar, text, string]
+    require_not_null: true
+  - id: MNY-02
+    kind: money_type
+    when_access: [public]
+    amount_regex: '(^|_)(arr|amount|price|balance|principal|fee|revenue)($|_)|_minor$'
+    allowed_types: [bigint, integer, int, hugeint, smallint]
+  - id: TIM-01
+    kind: temporal_type
+    date_regex: '(^|_)date$|^date_day$'
+    timestamp_regex: '_at$'
+    date_types: [date]
+    timestamp_types: [timestamp, timestamptz, timestamp_ntz, timestamp_tz, timestamp_ltz]
+  - id: STS-01
+    kind: accepted_values
+    name_regex: '(^status$|_status$|^movement_type$|^dpd_bucket$|^loan_status$)'
+  - id: GEO-01
+    kind: column_meta
+    column: country_code
+    meta_key: geo_standard
+    meta_value: iso_3166_1_alpha_2
+    data_types: [varchar, text, char, string]
+  - id: DOC-01
+    kind: description
+  - id: GRN-02
+    kind: grain_test
+    when_access: [public]
+    composite_name_regex: 'grain|unique_combination_of_columns'

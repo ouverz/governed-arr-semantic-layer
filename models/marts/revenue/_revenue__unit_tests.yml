@@ -19,10 +19,10 @@ unit_tests:
           - {snapshot_date: '2025-03-31'}
     expect:
       rows:
-        - {snapshot_date: '2025-01-31', account_id: account_1, subscription_id: subscription_1, product_family: Platform, ending_arr: 1200.00}
-        - {snapshot_date: '2025-02-28', account_id: account_1, subscription_id: subscription_1, product_family: Platform, ending_arr: 1200.00}
-        - {snapshot_date: '2025-02-28', account_id: account_2, subscription_id: subscription_2, product_family: Platform, ending_arr: 600.00}
-        - {snapshot_date: '2025-03-31', account_id: account_2, subscription_id: subscription_2, product_family: Platform, ending_arr: 600.00}
+        - {snapshot_date: '2025-01-31', account_id: account_1, subscription_id: subscription_1, product_family: Platform, currency_code: EUR, ending_arr: 1200.00}
+        - {snapshot_date: '2025-02-28', account_id: account_1, subscription_id: subscription_1, product_family: Platform, currency_code: EUR, ending_arr: 1200.00}
+        - {snapshot_date: '2025-02-28', account_id: account_2, subscription_id: subscription_2, product_family: Platform, currency_code: EUR, ending_arr: 600.00}
+        - {snapshot_date: '2025-03-31', account_id: account_2, subscription_id: subscription_2, product_family: Platform, currency_code: EUR, ending_arr: 600.00}
 
   - name: fct_arr_movement_classifies_key_balance_transitions
     description: >
@@ -42,18 +42,18 @@ unit_tests:
           - {account_id: changing_account}
       - input: ref('fct_arr_snapshot')
         rows:
-          - {snapshot_date: '2025-01-31', account_id: lifecycle_account, ending_arr: 100.00}
-          - {snapshot_date: '2025-04-30', account_id: lifecycle_account, ending_arr: 80.00}
-          - {snapshot_date: '2025-01-31', account_id: changing_account, ending_arr: 100.00}
-          - {snapshot_date: '2025-02-28', account_id: changing_account, ending_arr: 150.00}
-          - {snapshot_date: '2025-03-31', account_id: changing_account, ending_arr: 120.00}
-          - {snapshot_date: '2025-04-30', account_id: changing_account, ending_arr: 120.00}
+          - {snapshot_date: '2025-01-31', account_id: lifecycle_account, currency_code: EUR, ending_arr: 100.00}
+          - {snapshot_date: '2025-04-30', account_id: lifecycle_account, currency_code: EUR, ending_arr: 80.00}
+          - {snapshot_date: '2025-01-31', account_id: changing_account, currency_code: EUR, ending_arr: 100.00}
+          - {snapshot_date: '2025-02-28', account_id: changing_account, currency_code: EUR, ending_arr: 150.00}
+          - {snapshot_date: '2025-03-31', account_id: changing_account, currency_code: EUR, ending_arr: 120.00}
+          - {snapshot_date: '2025-04-30', account_id: changing_account, currency_code: EUR, ending_arr: 120.00}
     expect:
       rows:
-        - {snapshot_date: '2025-01-31', account_id: lifecycle_account, beginning_arr: 0.00, ending_arr: 100.00, movement_amount: 100.00, movement_type: new}
-        - {snapshot_date: '2025-02-28', account_id: lifecycle_account, beginning_arr: 100.00, ending_arr: 0.00, movement_amount: -100.00, movement_type: churn}
-        - {snapshot_date: '2025-04-30', account_id: lifecycle_account, beginning_arr: 0.00, ending_arr: 80.00, movement_amount: 80.00, movement_type: reactivation}
-        - {snapshot_date: '2025-01-31', account_id: changing_account, beginning_arr: 0.00, ending_arr: 100.00, movement_amount: 100.00, movement_type: new}
-        - {snapshot_date: '2025-02-28', account_id: changing_account, beginning_arr: 100.00, ending_arr: 150.00, movement_amount: 50.00, movement_type: expansion}
-        - {snapshot_date: '2025-03-31', account_id: changing_account, beginning_arr: 150.00, ending_arr: 120.00, movement_amount: -30.00, movement_type: contraction}
+        - {snapshot_date: '2025-01-31', account_id: lifecycle_account, currency_code: EUR, beginning_arr: 0.00, ending_arr: 100.00, movement_amount: 100.00, movement_type: new}
+        - {snapshot_date: '2025-02-28', account_id: lifecycle_account, currency_code: EUR, beginning_arr: 100.00, ending_arr: 0.00, movement_amount: -100.00, movement_type: churn}
+        - {snapshot_date: '2025-04-30', account_id: lifecycle_account, currency_code: EUR, beginning_arr: 0.00, ending_arr: 80.00, movement_amount: 80.00, movement_type: reactivation}
+        - {snapshot_date: '2025-01-31', account_id: changing_account, currency_code: EUR, beginning_arr: 0.00, ending_arr: 100.00, movement_amount: 100.00, movement_type: new}
+        - {snapshot_date: '2025-02-28', account_id: changing_account, currency_code: EUR, beginning_arr: 100.00, ending_arr: 150.00, movement_amount: 50.00, movement_type: expansion}
+        - {snapshot_date: '2025-03-31', account_id: changing_account, currency_code: EUR, beginning_arr: 150.00, ending_arr: 120.00, movement_amount: -30.00, movement_type: contraction}
 

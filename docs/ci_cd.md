@@ -23,8 +23,9 @@ dispatches. It:
    skipping data tests in the slim step;
 8. runs the complete local DuckDB build and data-test suite;
 9. executes the local semantic contract validator;
-10. runs the governance quality gate; and
-11. publishes the successful `main` manifest for future state comparison.
+10. runs the governance gate unit tests and the governance quality gate;
+11. shows that removing `meta.owner` from `fct_arr_snapshot` fails the gate with `OWN-01`; and
+12. publishes the successful `main` manifest for future state comparison.
 
 The first successful `main` run has no prior manifest, so modified-state
 selection is skipped. The complete build still runs.
@@ -34,12 +35,15 @@ replacement for the complete local build. Prefixing and suffixing
 `state:modified` with `+` includes required ancestors and affected descendants
 in the fresh CI database. The slim step skips data tests because partial
 selection can leave some test contexts under-populated; the full `dbt build`
-later in CI still runs the complete test set.
+later in CI still runs the complete test set. At this project size the full
+build is cheap, so the slim build does not replace it.
 
-The governance quality gate runs `make governance-check`. It validates that
-required metric-product controls exist, including the metric contract, owners,
-certified grain, semantic model, data-quality summary, expected fixtures,
-critical business tests, and CI validation hooks.
+The governance quality gate runs `make governance-check` after the manifest
+exists. It checks every enabled model against `governance/policy.yml`. The
+step name stays `Validate governance quality gate`. A following step removes
+`meta.owner` from `fct_arr_snapshot` in a copy of that manifest and requires
+the gate to fail with `OWN-01 fct_arr_snapshot`. That step passes only when
+the gate fails for that reason.
 
 ## GitHub Configuration
 

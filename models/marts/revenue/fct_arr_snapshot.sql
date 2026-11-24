@@ -34,6 +34,7 @@ select
     account_id,
     subscription_id,
     product_family,
+    'EUR' as currency_code,
     cast(sum(line_arr) as decimal(18, 2)) as ending_arr
 from active_lines
 group by 1, 2, 3, 4

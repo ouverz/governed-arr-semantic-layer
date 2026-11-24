@@ -1,0 +1,39 @@
+version: 1
+
+# An exception suppresses one rule for one model until expires_on (inclusive).
+# Expired exceptions fail the gate (EXC-01) and no longer suppress the rule.
+exceptions:
+  - rule: NAM-01
+    model: metricflow_time_spine
+    owner: Data
+    expires_on: 2027-12-31
+    reason: >
+      MetricFlow requires this model to be named metricflow_time_spine.
+      Revisit if MetricFlow stops requiring that name.
+
+  - rule: MNY-02
+    model: fct_arr_snapshot
+    owner: Data
+    expires_on: 2027-06-30
+    reason: >
+      Ending ARR stays decimal(18,2). New products store integer minor units.
+      Migrating ARR has no consumer benefit while the metric is EUR-only.
+      currency_code is still required (MNY-01). See ADR 0002.
+
+  - rule: MNY-02
+    model: fct_arr_movement
+    owner: Data
+    expires_on: 2027-06-30
+    reason: >
+      Movement amounts are differences of the decimal Ending ARR balance.
+      Same dated exception as fct_arr_snapshot. See ADR 0002.
+
+  - rule: NAM-01
+    model: revenue_metrics
+    owner: Data
+    expires_on: 2027-12-31
+    require_present: false
+    reason: >
+      The Snowflake semantic view keeps its existing relation name. It is
+      disabled on DuckDB, so this exception is dormant unless that model is
+      in the manifest. New semantic SQL models use the sem_ prefix.

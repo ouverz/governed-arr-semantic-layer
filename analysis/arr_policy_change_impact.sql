@@ -1,3 +1,5 @@
+{{ config(group='revenue') }}
+
 with eligible_lines as (
     select *
     from {{ ref('int_subscription_arr_lines') }}

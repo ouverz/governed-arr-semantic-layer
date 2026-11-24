@@ -11,6 +11,10 @@ models:
       - name: subscription_id
         data_tests: [not_null]
       - name: account_id
+        description: Salesforce account identifier. Not the conformed customer key.
+        config:
+          meta:
+            key_role: salesforce_account
         data_tests: [not_null]
       - name: product_id
         data_tests: [not_null]
