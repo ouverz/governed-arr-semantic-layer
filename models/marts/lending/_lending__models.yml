@@ -6,8 +6,8 @@ models:
       Outstanding principal and days past due for each loan at calendar
       month-end, as known loan_knowledge_cutoff_days after that month-end.
       The default is 5, so a posting recorded on 4 April is known at 31 March.
-      Balances come from int_lending__loan_ledger. Version 1. No downstream
-      consumer is wired yet.
+      Balances come from int_lending__loan_ledger. Version 1. The MetricFlow
+      consumer is the portfolio_par30 exposure, which reads par30_ratio.
     latest_version: 1
     config:
       access: public
@@ -22,7 +22,8 @@ models:
         freshness_sla: "lab: month-end, known at month-end plus 5 days, rebuilt on demand"
         availability: "lab: declared, not operated"
         support_channel: data@arr-lab.example
-        consumers: []
+        consumers:
+          - portfolio_par30
         primary_key:
           - loan_id
           - month_end_date

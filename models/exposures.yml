@@ -1,0 +1,18 @@
+version: 2
+
+exposures:
+  - name: portfolio_par30
+    type: analysis
+    description: >
+      MetricFlow consumer of par30_ratio on fct_loan_month_end v1. The ratio
+      is the share of outstanding principal that is 30 or more days past due
+      at the latest month-end in the query. Illustrative. Not a lender's policy.
+    owner:
+      name: Credit
+      email: data@arr-lab.example
+    depends_on:
+      - ref('fct_loan_month_end')
+      - metric('par30_ratio')
+    config:
+      meta:
+        owner: Credit

@@ -195,6 +195,71 @@ require(
     "Latest Ending ARR unexpectedly equals the invalid sum across all snapshots.",
 )
 
+LOAN_MODEL_ID = f"{SEMANTIC_MODEL_PREFIX}.loan_month_end"
+PAR30_METRIC_ID = "metric.arr_semantic_layer_lab.par30_ratio"
+loan_semantic_model = semantic_models[LOAN_MODEL_ID]
+require(
+    "fct_loan_month_end" in str(loan_semantic_model["model"]),
+    "loan_month_end must be built on fct_loan_month_end.",
+)
+loan_measures = {measure["name"]: measure for measure in loan_semantic_model["measures"]}
+for measure_name in ("outstanding_principal_minor", "par30_outstanding_principal_minor"):
+    measure = loan_measures[measure_name]
+    non_additive = measure["non_additive_dimension"]
+    require(measure["agg"] == "sum", f"{measure_name} must sum rows within one month-end.")
+    require(
+        non_additive["name"] == "month_end_date",
+        f"{measure_name} must be non-additive across month_end_date.",
+    )
+    require(
+        non_additive["window_choice"] == "max",
+        f"{measure_name} must select the latest month-end in the queried time range.",
+    )
+require(
+    "days_past_due >= 30" in loan_measures["par30_outstanding_principal_minor"]["expr"],
+    "PAR 30 principal must include days_past_due of 30 and above.",
+)
+
+par30_metric = manifest["metrics"][PAR30_METRIC_ID]
+require(par30_metric["type"] == "ratio", "par30_ratio must be a ratio metric.")
+require(
+    par30_metric["type_params"]["numerator"]["name"] == "par30_outstanding_principal",
+    "par30_ratio numerator must be the 30+ principal input.",
+)
+require(
+    par30_metric["type_params"]["denominator"]["name"] == "outstanding_principal",
+    "par30_ratio denominator must be total outstanding principal.",
+)
+exposure = manifest["exposures"]["exposure.arr_semantic_layer_lab.portfolio_par30"]
+require(
+    PAR30_METRIC_ID in exposure["depends_on"]["nodes"],
+    "portfolio_par30 must depend on par30_ratio.",
+)
+
+with duckdb.connect(str(DATABASE_PATH), read_only=True) as connection:
+    par30_rows = connection.execute(
+        """
+        select
+            month_end_date,
+            sum(case when days_past_due >= 30 then outstanding_principal_minor else 0 end) as numerator,
+            sum(outstanding_principal_minor) as denominator
+        from main_marts.fct_loan_month_end
+        where month_end_date in (date '2025-03-31', date '2025-05-31', date '2025-06-30')
+        group by month_end_date
+        order by month_end_date
+        """
+    ).fetchall()
+
+require(
+    [(row[0].isoformat(), row[1], row[2]) for row in par30_rows]
+    == [
+        ("2025-03-31", 500_000, 2_150_000),
+        ("2025-05-31", 200_000, 1_100_000),
+        ("2025-06-30", 0, 700_000),
+    ],
+    f"PAR 30 inputs differ from the hand totals: {par30_rows}",
+)
+
 print("Semantic contract validation passed.")
 print(f"Validated account dimension groups: {len(account_dimension_rows)}")
 print(f"Latest snapshot: {latest_snapshot_date} | {latest_ending_arr:.2f}")
