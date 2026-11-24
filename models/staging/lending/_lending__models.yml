@@ -1,0 +1,100 @@
+version: 2
+
+models:
+  - name: stg_lending__applications
+    description: >
+      Application events from the lending batch. Amounts stay in minor units.
+      effective_at is when the event took effect. recorded_at is when the
+      lending system committed it.
+    columns:
+      - name: event_id
+        description: Idempotency key from the producer.
+        data_tests: [not_null, unique]
+      - name: account_id
+        description: Salesforce account. Not the conformed customer key.
+        config:
+          meta:
+            key_role: salesforce_account
+        data_tests: [not_null]
+      - name: effective_at
+        description: When the application event took effect. UTC.
+        data_type: timestamp
+      - name: recorded_at
+        description: When the lending system committed the event. UTC.
+        data_type: timestamp
+
+  - name: stg_lending__loans
+    description: >
+      Loan lifecycle events. Not a current-state loan table. A write-off is
+      its own event and does not also close the loan.
+    columns:
+      - name: event_id
+        description: Idempotency key from the producer.
+        data_tests: [not_null, unique]
+      - name: loan_id
+        description: Stable loan identifier. Golden values are the scenario names.
+        data_tests: [not_null]
+      - name: account_id
+        description: Salesforce account. Not the conformed customer key.
+        config:
+          meta:
+            key_role: salesforce_account
+        data_tests: [not_null]
+      - name: effective_at
+        description: When the lifecycle event took effect. UTC.
+        data_type: timestamp
+      - name: recorded_at
+        description: When the lending system committed the event. UTC.
+        data_type: timestamp
+
+  - name: stg_lending__repayment_schedule
+    description: >
+      Instalments as they were scheduled, and the later event that supersedes
+      one. effective_at is when the schedule row took effect, not the due date.
+    columns:
+      - name: event_id
+        description: Idempotency key from the producer.
+        data_tests: [not_null, unique]
+      - name: loan_id
+        description: Loan the instalment belongs to.
+        data_tests: [not_null]
+      - name: account_id
+        description: Salesforce account on the loan.
+        config:
+          meta:
+            key_role: salesforce_account
+        data_tests: [not_null]
+      - name: due_date
+        description: Business date the instalment is due.
+        data_type: date
+      - name: effective_at
+        description: When this schedule row took effect. UTC.
+        data_type: timestamp
+      - name: recorded_at
+        description: When the lending system committed the row. UTC.
+        data_type: timestamp
+
+  - name: stg_lending__repayments
+    description: >
+      Cash posted to a loan. draw_posted increases principal. repayment_posted
+      reduces principal by principal_minor. Interest does not change principal.
+      recorded_at can be after effective_at when the posting arrives late.
+    columns:
+      - name: event_id
+        description: Idempotency key from the producer.
+        data_tests: [not_null, unique]
+      - name: loan_id
+        description: Loan the cash posted to.
+        data_tests: [not_null]
+      - name: account_id
+        description: Salesforce account on the loan.
+        config:
+          meta:
+            key_role: salesforce_account
+        data_tests: [not_null]
+      - name: effective_at
+        description: Value date. When the cash took effect. UTC.
+        data_type: timestamp
+      - name: recorded_at
+        description: When the lending system committed the posting. UTC.
+        data_type: timestamp
